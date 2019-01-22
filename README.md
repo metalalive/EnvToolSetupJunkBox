@@ -2,7 +2,7 @@
 
 
 ### Tool setup
-* STM32MXCube, easy to install, download from official webpage
+* STM32MXCube, GUI interface to configure each GPIO pin for your application, then automatically generate firmware code, also easy to install, download from official webpage.
 * st-link flash v2, for loading your binary image to flash memory of target board
 * install toolchain arm-none-eabi-gcc for cortex-m4 MCU, due to [this issue and its corresponding workaround](https://stackoverflow.com/a/26945980/9853105), DO NOT directly install the toolchain from apt-get repository, instead you should :
   * download arm-none-eabi-gcc (in my case, I downloaded 5.4-2016-q3-update release) from [this site](https://launchpad.net/gcc-arm-embedded/+download)
@@ -25,16 +25,31 @@
   * type ```openocd --version``` to see if it works
   
 
-### Debug Usage
+#### Debugging with OpenOCD and GDB
   * open 2 terminals, one is for openocd acted as server, the other one is for gdb-multiarch acted as client
-  * ```
+  * for the first terminal, launch openocd with correct configuration scripts as shown below :
+    ```
     openocd -f /PATH/YOU/WANT/openocd/v0.10.0/tcl/interface/stlink_v2-1.cfg  \
             -f /PATH/YOU/WANT/openocd/v0.10.0/tcl/board/st_nucleo_f4.cfg \
             -c init -c "reset init" 
     ```
-  * ```
+    then openocd will act as server waiting for other client connection
+    
+  * for the second terminal, launch gdb-multiarch with your binary test image as shown below :
+    ```
     gdb-multiarch  /PATH/TO/YOUR_BINARY_IMAGE_ELF_FILE
     ```
-    * localhost:3333
-    * where; list ;info b;
+  * Here are available GDB commands we've tried so far
+    ```
+    target remote localhost:3333 , 3333 is default connection port on OpenOCD server
+    disconnect
+    monitor reg <REGISTER_NUMBER> , <REGISTER_NUMBER> can be from 0 to 15 in Cortex-M4 MCU
+    load
+    where
+    list 
+    break <FILE_NAME>:<NUM_OF_LINE>
+    hb    <FILE_NAME>:<NUM_OF_LINE>
+    info b
+    backtrace
+    ```
 
