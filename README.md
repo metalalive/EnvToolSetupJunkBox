@@ -29,7 +29,8 @@
   * open 2 terminals, one is for openocd acted as server, the other one is for gdb-multiarch acted as client
   * for the first terminal, launch openocd with correct configuration scripts as shown below :
     ```
-    openocd -f /PATH/YOU/WANT/openocd/v0.10.0/tcl/interface/stlink_v2-1.cfg  \
+    
+    openocd -f /PATH/YOU/WANT/openocd/v0.10.0/tcl/interface/stlink-v2-1.cfg \
             -f /PATH/YOU/WANT/openocd/v0.10.0/tcl/board/st_nucleo_f4.cfg \
             -c init -c "reset init" 
     ```
@@ -42,6 +43,8 @@
   * Here are available GDB commands we've tried so far
     ```
     target remote localhost:3333 , 3333 is default connection port on OpenOCD server
+    monitor reset
+    monitor halt
     disconnect
     monitor reg <REGISTER_NUMBER> , <REGISTER_NUMBER> can be from 0 to 15 in Cortex-M4 MCU
     load
@@ -50,6 +53,9 @@
     break <FILE_NAME>:<NUM_OF_LINE>
     hb    <FILE_NAME>:<NUM_OF_LINE>
     info b
+    continue
     backtrace
     ```
 
+### Reference
+* [Debugging with GDB](https://sourceware.org/gdb/onlinedocs/gdb/index.html#Top)
