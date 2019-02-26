@@ -1,11 +1,20 @@
 
 
-### Download AT firmware to target ESP8266 board
+#### Download AT firmware to target ESP8266 board
 
+* download pre-built *ESP8266_NONOS_SDK* and *esptool*
+* program the prebuilt firmware using ```esptool``` , the command :
+  ```
+  sudo python3 ../esptool/v2.6/esptool.py -p /dev/ttyUSB0 -b 115200 write_flash \
+                0x0000 ./bin/boot_v1.7.bin \
+                0x1000 ./bin/at/512+512/user1.1024.new.2.bin \
+                0xfc000 ./bin/esp_init_data_default_v08.bin \
+                0x7e000 ./bin/blank.bin \
+                0xfe000 ./bin/blank.bin 
+  ```
 
+when you get result like following, the firmware should be successfully written to target board.
 ```
-sudo python3 ../esptool/v2.6/esptool.py -p /dev/ttyUSB0 -b 115200 write_flash 0x0000 ./bin/boot_v1.7.bin  0x1000 ./bin/at/512+512/user1.1024.new.2.bin  0xfc000 ./bin/esp_init_data_default_v08.bin  0x7e000 ./bin/blank.bin 0xfe000 ./bin/blank.bin 
-
 esptool.py v2.6
 Serial port /dev/ttyUSB0
 Connecting....
