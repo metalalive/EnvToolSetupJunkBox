@@ -2,6 +2,10 @@
 
 #### Download AT firmware to target ESP8266 board
 
+* prepare USB-to-TTL cable connecting Tx/Rx pins of ESP8266 board (in my case it's ESP-01s) and host PC which runs ```esptool``` later.
+* 3.3 Volt. to ESP board. I powered ESP board using 3.3V pin on STM32F4 board , it works well.
+* always assert GPIO2 by connecting the pin to VDD (3.3 Volt.)
+* left GPIO0 unconnected .
 * download pre-built *ESP8266_NONOS_SDK* and *esptool*
 * program the prebuilt firmware using ```esptool``` , the command :
   ```
