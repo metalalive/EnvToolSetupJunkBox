@@ -11,15 +11,16 @@ Here are sources you can get pre-built firmware or source code which are require
 
 | pin of ESP-01   | other devices |
 |-----------------|---------------|
-| VDD, CH_PD,GPIO2  |  3.3 Volt. (we use 3.3V pin of STM32 board as power supply) |
-| GND               | GND of the power supply    |
+| VDD, CH_PD  |  3.3 Volt. (we use 3.3V pin of STM32 board as power supply) |
+| GND, GPIO0        | GND of the power supply    |
 | TX                | RX of USB-TTL serial cable |
 | RX                | TX of USB-TTL serial cable |
-| GPIO0             | left unconnected |
+| GPIO2             | left unconnected |
 
 
 * Download pre-built ESP8266 non-OS SDK . From version 3.0.0, ESP8266 Non-OS SDK no longer provides firmware for ESP device with flash size smaller than 2 MB (8Mb), therefore we used the version v2.2.0 of ESP non-OS SDK for ESP-01s because it provides firmware for flash size 1MB.
 * Downlaod esptool, install required package for python3 (python2 doesn't work in my case), [see the issue HERE](https://github.com/espressif/esptool/issues/324)
+* perform hardware reset before running any of esptool commands.
 * check flash size of the ESP device first. 
   ```
   python3 ../esptool/esptool.py  --port /dev/ttyUSB0  flash_id
@@ -85,6 +86,4 @@ Hash of data verified.
 
 Leaving...
 Hard resetting via RTS pin...
-
-
 ```
