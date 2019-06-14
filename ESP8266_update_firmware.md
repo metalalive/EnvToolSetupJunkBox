@@ -87,3 +87,8 @@ Hash of data verified.
 Leaving...
 Hard resetting via RTS pin...
 ```
+
+#### Reference
+* [ESP8266 01 overview and flashing instructions](https://github.com/jandelgado/NodeMCU/wiki/ESP8266-01-overview-and-flashing-instructions)
+* [How to Flash ESP-01 Firmware to the Improved SDK v2.0.0](https://www.allaboutcircuits.com/projects/flashing-the-ESP-01-firmware-to-SDK-v2.0.0-is-easier-now/)
+* [NodeMCU Flashing the firmware](https://nodemcu.readthedocs.io/en/master/flash/)
