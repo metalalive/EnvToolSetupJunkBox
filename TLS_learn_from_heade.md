@@ -31,6 +31,13 @@ $57 = {0x16, 0x3, 0x1, 0x2, 0x0, 0x1, 0x0, 0x1, 0xfc, 0x3, 0x3, 0x50, 0xbd, 0x28
 | `0x0, 0x1, 0xfc,` | (0x1fc) bytes of client-hello data|
 | `0x3, 0x3,`       | client version, means TLS v1.2, these fields are no longer used.|
 | `0x50, 0xbd, ... 0x70, 0xba,` | 32-byte client random data used in later session |
+| `0x20`                        | number of bytes that represents session ID (32 bytes in this case) |
+| `0xaa, 0x67, ... 0x53, 0xd,`  | session ID |
+| `0x00, 0x24, `  | number of bytes that represents Cipher Suite (36 bytes in this case) |
+| `0x13, 0x1,`    | Cipher Suite #1 : TLS_AES_128_GCM_SHA256 (each time we take 2 bytes)  |
+| `0x13, 0x3,`    | Cipher Suite #2 : TLS_CHACHA20_POLY1305_SHA256  |
+| `0x13, 0x2,`    | Cipher Suite #3 : TLS_AES_256_GCM_SHA384 |
+| `0xc0, 0x2b,`   | Cipher Suite #4 :  |
 
   
   
@@ -65,4 +72,7 @@ $61 = {0x0 <repeats 36 times>}
 
 
 #### Reference
-[TLS 1.3 handshaking example : Every byte explained and reproduced](https://tls13.ulfheim.net/)
+* [TLS 1.3 handshaking example : Every byte explained and reproduced](https://tls13.ulfheim.net/)
+
+* [Traffic analysis of SSL/TLS session](http://blog.fourthbit.com/2014/12/23/traffic-analysis-of-an-ssl-slash-tls-session)
+
