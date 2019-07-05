@@ -29,7 +29,7 @@ $57 = {0x16, 0x3, 0x1, 0x2, 0x0, 0x1, 0x0, 0x1, 0xfc, 0x3, 0x3, 0x50, 0xbd, 0x28
 | `0x2,  0x0,`      |  0x200 bytes (512 bytes) of handshake message (excluding these 2 bytes) |
 | `0x1, `           | handshank message type, means client-hello|
 | `0x0, 0x1, 0xfc,` | (0x1fc) bytes of client-hello data|
-| `0x3, 0x3,`       | client version, means TLS v1.2, these fields are no longer used.|
+| `0x3, 0x3,`       | client version, means TLS v1.2, these fields are no longer used for version negotiation & hardcoded to version 1.2 .|
 | `0x50, 0xbd, ... 0x70, 0xba,` | 32-byte client random data used in later session |
 | `0x20`                        | number of bytes that represents session ID (32 bytes in this case) |
 | `0xaa, 0x67, ... 0x53, 0xd,`  | session ID |
