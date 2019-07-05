@@ -37,8 +37,9 @@ $57 = {0x16, 0x3, 0x1, 0x2, 0x0, 0x1, 0x0, 0x1, 0xfc, 0x3, 0x3, 0x50, 0xbd, 0x28
 | `0x13, 0x1,`    | Cipher Suite #1 : TLS_AES_128_GCM_SHA256 (each time we take 2 bytes)  |
 | `0x13, 0x3,`    | Cipher Suite #2 : TLS_CHACHA20_POLY1305_SHA256  |
 | `0x13, 0x2,`    | Cipher Suite #3 : TLS_AES_256_GCM_SHA384 |
-| `0xc0, 0x2b,`   | Cipher Suite #4 :  |
-
+| `0xc0, 0x2b,`   | Cipher Suite #4 :  TLS v1.3 cannot use subsequent CipherSuite defined in lower version of TLS protocol (e.g. TLS v1.2 , TLS v1.1 ...etc.) , as specifiction defined [at here](https://tools.ietf.org/html/rfc8446#appendix-B.4) |
+| `0x0,  0xa,`    | Cipher Suite #18: similarly, cannot be used in TLS v1.3 |
+| `0x1, 0x0`   | compression method, no longer used in TLS v1.3 |
   
   
 ```
@@ -72,6 +73,8 @@ $61 = {0x0 <repeats 36 times>}
 
 
 #### Reference
+* [RFC 8446 - The Transport Layer Security (TLS) Protocol Version 1.3](https://tools.ietf.org/html/rfc8446)
+
 * [TLS 1.3 handshaking example : Every byte explained and reproduced](https://tls13.ulfheim.net/)
 
 * [Traffic analysis of SSL/TLS session](http://blog.fourthbit.com/2014/12/23/traffic-analysis-of-an-ssl-slash-tls-session)
