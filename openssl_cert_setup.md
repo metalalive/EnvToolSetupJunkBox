@@ -11,13 +11,14 @@ openssl x509 -text -noout -in ca_crt.pem -inform PEM
 
 #### generate server cert, sign it using CA cert 
 
-Note that x509v3 can be added by the option `extensions v3_req` and `-extfile /usr/local/ssl/openssl.cnf`
+* x509v3 extension can be added by the option `extensions v3_req` and `-extfile <OPENSSL_INSTALL_PATH>/openssl.cnf`
+* signature size is determined by RSA key kength (e.g. 2048 bits in the command below)
 ```
 openssl genrsa -out server_priv_key.pem  2048
 
 openssl req -new  -days 1 -key server_priv_key.pem -keyform PEM -out server_csr.pem -outform PEM  -sha384
 
-openssl x509 -req -in server_csr.pem -extfile /usr/local/ssl/openssl.cnf -extensions v3_req  -CA ca_crt.pem -CAform PEM -CAkey ca_priv_key.pem -CAkeyform PEM -CAcreateserial -out server_crt.pem -outform PEM -days 1
+openssl x509 -req -in server_csr.pem -extfile /usr/local/ssl/openssl.cnf -extensions v3_req  -CA ca_crt.pem -CAform PEM -CAkey ca_priv_key.pem -CAkeyform PEM -CAcreateserial -out server_crt.pem -outform PEM -days 1 -sha384
 ```
 
 
