@@ -1,6 +1,6 @@
 
 ### Python 3.9
-Tested on Ubuntu 14.04 & Debain 9 (Raspbian Stretch)
+Tested on Ubuntu 14.04LTS & Debain 9 (Raspbian Stretch)
 
 * Install dependency packages
 ```
@@ -9,7 +9,7 @@ sudo apt-get install -y build-essential tk-dev libncurses5-dev libncursesw5-dev 
              liblzma-dev zlib1g-dev libffi-dev tar wget vim
 ```
 
-* Download Python source file & Go to Python source directory
+* Download Python source code & Go to the downloaded Python source directory
 
 * Configure everythin required (you may need root priviledge to do things). For those who built OpenSSL from source for whatever reasons, you better specify path of your openssl installation path, with `--with-openssl`, `CFLAGS` and `LDFLAGS` options when running `./configure` below:
 
@@ -20,7 +20,7 @@ sudo apt-get install -y build-essential tk-dev libncurses5-dev libncursesw5-dev 
     LDFLAGS="-L/PATH/TO/YOUR/OPENSSL_INSTALL_FODLER/"
 ```
 
-* Recheck config.log. For those who built OpenSSL from source, make sure you get following results :
+* Recheck `config.log`. For those who built OpenSSL from source, make sure you get following results :
 ```
 configure:xxxxx: checking for openssl/ssl.h in /PATH/TO/YOUR/OPENSSL_INSTALL_FODLER/
 configure:xxxxx: result: yes
@@ -35,7 +35,7 @@ configure:xxxxx: result: yes
 make build_all -j 1 >& build.log
 ```
 
-* Recheck build.log. For those who built OpenSSL from source, make sure you DON'T have this message in your `build.log`, otherwise you will get some troubles later when you try to install packages through `pip`.
+* Recheck build.log. For those who built OpenSSL from source, make sure you DON'T have the following message in your `build.log`, otherwise you will get some troubles later when you try to install packages through `pip`.
 ```
 Failed to build these modules:
 _ssl
@@ -46,7 +46,7 @@ LibreSSL 2.6.4 and earlier do not provide the necessary APIs, https://github.com
 ....
 ```
 
-* If Python is built successfully, you should see executable file `python` in the Python source directory. It's optional to run `make install`, instead you can run python at the source folder :
+* If Python is built successfully, you should see executable file `python` in the Python source directory. It's optional to run `make install`, instead you can run python directly at the source folder :
 ```
 user@localhost: ~/xxx/$ ./python 
 Python 3.9.0a5 (default, Apr  6 2020, 13:28:07) 
@@ -56,7 +56,7 @@ Type "help", "copyright", "credits" or "license" for more information.
 ```
 
 
-* Now set up & upgrade `pip` for newly built python3.9 (you may need root priviledge to do this)
+* Now install or upgrade `pip` for newly built python3.9 (you may need root priviledge to do this)
 ```
 ./python -m pip install whatever
 ./python -m pip install --upgrade pip
