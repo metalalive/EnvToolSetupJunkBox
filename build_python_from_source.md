@@ -79,8 +79,11 @@ pip 20.0.2 from /usr/local/lib/python3.9/site-packages/pip (python 3.9)
 
 https://devguide.python.org/setup/
 
+https://packaging.python.org/tutorials/installing-packages/
+
 https://bugs.python.org/issue34028
 
 https://www.guru99.com/pytest-tutorial.html
 
+https://stackoverflow.com/questions/51373063/pip3-bad-interpreter-no-such-file-or-directory
 
