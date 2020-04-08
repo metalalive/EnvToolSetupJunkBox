@@ -16,6 +16,7 @@ sudo apt-get install -y build-essential tk-dev libncurses5-dev libncursesw5-dev 
 ```
 ./configure  --with-openssl=/PATH/TO/YOUR/OPENSSL_INSTALL_FODLER/ \
     --enable-optimizations \
+    --with-ssl-default-suites=openssl \
     CFLAGS="-I/PATH/TO/YOUR/OPENSSL_INSTALL_FODLER/include" \
     LDFLAGS="-L/PATH/TO/YOUR/OPENSSL_INSTALL_FODLER/"
 ```
@@ -58,7 +59,9 @@ Type "help", "copyright", "credits" or "license" for more information.
 
 * Now install or upgrade `pip` for newly built python3.9 (you may need root priviledge to do this)
 ```
-./python -m pip install whatever
+./python -m ensurepip --default-pip // first time to install
+./python -m pip install whatever // force to reinstall
+
 ./python -m pip install --upgrade pip
 ```
 
