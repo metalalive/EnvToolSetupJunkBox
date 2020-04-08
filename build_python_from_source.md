@@ -90,3 +90,5 @@ https://www.guru99.com/pytest-tutorial.html
 
 https://stackoverflow.com/questions/51373063/pip3-bad-interpreter-no-such-file-or-directory
 
+https://stackoverflow.com/questions/53543477/building-python-3-7-1-ssl-module-failed
+
