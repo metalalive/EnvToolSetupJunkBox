@@ -40,7 +40,7 @@ mosquitto_passwd -c PATH_TO_PASSWD_FILE  NEW_USER_NAME
 mosquitto_passwd    PATH_TO_PASSWD_FILE  NEW_USER_NAME
 ```
 
-* ACL suppport, according to [this issue](https://github.com/mqttjs/MQTT.js/issues/714) and [this](https://github.com/eclipse/mosquitto/issues/803#issuecomment-386110952) , ACL with `Mosquitto MQTT broker (v1.6.9)` may not prevent subscription, In my case, subscriptions that are considered invalid are NEVER denied at all. (they should be)
+* ACL suppport, according to [this issue](https://github.com/mqttjs/MQTT.js/issues/714) and [this](https://github.com/eclipse/mosquitto/issues/803#issuecomment-386110952) , ACL with `Mosquitto MQTT broker` may not prevent subscription. Subscriptions that are considered invalid are NEVER denied at `Mosquitto MQTT broker` (v1.6.9, in my case). (they should be)
 ```
 # example below
 user someadmin
