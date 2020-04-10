@@ -54,5 +54,9 @@ topic read   topic2/ctrl/username123
 user username456 
 topic write  topic1/log/username456 
 topic read   topic2/ctrl/username456 
+
+// For example, even in mosquitto broker v1.6.9, username123 can subscribe ANY topic,
+// but publish with ACL works as expected, username123 is restricted to publish with 
+// topic1/log/username123 after verification.
 ```
 
