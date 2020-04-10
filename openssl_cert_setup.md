@@ -16,9 +16,9 @@ openssl x509 -text -noout -in ca_crt.pem -inform PEM
 ```
 openssl genrsa -out server_priv_key.pem  2048
 
-// edit subjectAltName=IP:xxx.xxx.xxx.xxx at usr_cert section of /usr/local/ssl/openssl.cnf, then run the command below
 openssl req -new  -days 1 -key server_priv_key.pem -keyform PEM -out server_csr.pem -outform PEM  -sha384
 
+// edit subjectAltName=IP:xxx.xxx.xxx.xxx at usr_cert section of /usr/local/ssl/openssl.cnf, then run the command below
 openssl x509 -req -in server_csr.pem -extfile /usr/local/ssl/openssl.cnf -extensions v3_req  usr_cert  \
     -CA ca_crt.pem -CAform PEM -CAkey ca_priv_key.pem -CAkeyform PEM -CAcreateserial -out server_crt.pem \
     -outform PEM -days 1 -sha384
