@@ -20,7 +20,34 @@ make clean; make  V=1  EXTRALIBS="../libtommath/libtommath.a" CFLAGS="-I../libto
 make test EXTRALIBS="../libtommath/libtommath.a"
 ```
 
+### libwebsockets for mosquitto MQTT
+For those who need to build from source, clone the source from github, go to the source folder.
+```
+mkdir build
+cd build
+```
+For those who also build openssl from source, you have:
+```
+cmake .. -DOPENSSL_ROOT_DIR=/usr/local   -DCMAKE_INCLUDE_DIRECTORIES_PROJECT_BEFORE=/usr/local  \
+    -DLWS_OPENSSL_INCLUDE_DIRS=/usr/local/include/openssl  \
+    -DLWS_OPENSSL_LIBRARIES="/usr/local/lib/libssl.so;/usr/local/lib/libcrypto.so"  \
+    -DCMAKE_BUILD_TYPE=DEBUG   -DLWS_WITH_HTTP2=1   -DLWS_ROLE_MQTT=1  >&  cmake.log
+
+make
+
+sudo make install
+```
+check `libwebsockets.so` in `/usr/local/lib`, it should be linked to the version you just installed.
+
+
 ### Mosquitto MQTT broker / client
+* Build from source
+```
+make WITH_DOCS=no  CPPFLAGS="-DSSL_OP_NO_TLSv1_3"  WITH_WEBSOCKETS=yes
+
+sudo make install  WITH_DOCS=no  WITH_WEBSOCKETS=yes
+```
+
 * Mosquitto publish command sample
 ```
 mosquitto_pub -h 123.44.5.67 -p 8883 -u USERNAME -P PASSWD  -i PUB_ID  -q 2 --tls-version tlsv1.3  -V mqttv5 \
