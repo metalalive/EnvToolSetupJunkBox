@@ -1,9 +1,8 @@
 
-### Paho
+### Paho C MQTT
 Paho install instruction
 ```
 make PAHO_WITH_SSL=TRUE PAHO_BUILD_DOCUMENTATION=FALSE
-
 sudo  make install  PAHO_WITH_SSL=TRUE PAHO_BUILD_DOCUMENTATION=FALSE
 ```
 
@@ -21,7 +20,7 @@ make clean; make  V=1  EXTRALIBS="../libtommath/libtommath.a" CFLAGS="-I../libto
 make test EXTRALIBS="../libtommath/libtommath.a"
 ```
 
-### Mosquitto
+### Mosquitto MQTT broker / client
 * Mosquitto publish command sample
 ```
 mosquitto_pub -h 123.44.5.67 -p 8883 -u USERNAME -P PASSWD  -i PUB_ID  -q 2 --tls-version tlsv1.3  -V mqttv5 \
@@ -31,7 +30,7 @@ mosquitto_pub -h 123.44.5.67 -p 8883 -u USERNAME -P PASSWD  -i PUB_ID  -q 2 --tl
   users can append extra options `-r` (retain message enabled)
   
 
-* Mosquitto subscribe command sample : as the same as the publish command below, without message payload option `-m `
+* Mosquitto subscribe command sample : as the same as the publish command above, without message payload option `-m `
 
 * Create new user (and corresponding password) to Mosquitto broker
 ```
@@ -39,5 +38,21 @@ mosquitto_pub -h 123.44.5.67 -p 8883 -u USERNAME -P PASSWD  -i PUB_ID  -q 2 --tl
 mosquitto_passwd -c PATH_TO_PASSWD_FILE  NEW_USER_NAME
 // append new new user/passwd to existing PATH_TO_PASSWD_FILE
 mosquitto_passwd    PATH_TO_PASSWD_FILE  NEW_USER_NAME
+```
+
+* ACL suppport, according to [this issue](https://github.com/mqttjs/MQTT.js/issues/714) and [this](https://github.com/eclipse/mosquitto/issues/803#issuecomment-386110952) , ACL with `Mosquitto MQTT broker (v1.6.9)` may not prevent subscription, In my case, subscriptions that are considered invalid are NEVER denied at all. (they should be)
+```
+# example below
+user someadmin
+topic write  topic1/ctrl/+
+topic read   topic2/log/+ 
+ 
+user username123 
+topic write  topic1/log/username123 
+topic read   topic2/ctrl/username123 
+ 
+user username456 
+topic write  topic1/log/username456 
+topic read   topic2/ctrl/username456 
 ```
 
