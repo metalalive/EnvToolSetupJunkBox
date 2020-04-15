@@ -37,12 +37,15 @@
  --with-stream_ssl_preread_module \
  --with-cpp_test_module \
  --with-compat \
- --with-cc-opt="-g -I/usr/local/include" \
- --with-ld-opt="-L/usr/local/lib"  \
+ --with-cc-opt="-g -I/usr/local/include -I/usr/include " \
+ --with-ld-opt="-L/usr/local/lib -L/usr/lib "  \
  --with-openssl=/PATH/TO/YOUR/CUSTOM/OPEENSL_HOME \
  --with-debug  >&  config.log
 
 ```
+
+Note that you may need to add more paths to `--with-cc-opt` and `--with-ld-opt` successfully complete `cmake` procedure
+
 
 * Building nginx takes about 3 hours on Raspberry PI 1
 ```
@@ -60,4 +63,5 @@ sudo make install >& install.log &
 ##### Reference
 * [Build Nginx from source -- MatthewVance](https://github.com/MatthewVance/nginx-build/blob/master/build-nginx.sh)
 * [How To Compile Nginx From Source and Install on Raspbian Jessie](https://www.linuxbabe.com/raspberry-pi/compile-nginx-source-raspbian-jessie)
+* [Build Nginx from source - offiical doc](https://docs.nginx.com/nginx/admin-guide/installing-nginx/installing-nginx-open-source/)
 
