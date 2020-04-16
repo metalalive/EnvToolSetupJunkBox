@@ -1,11 +1,11 @@
 ### MariaDB setup (build from source, and configure)
 
-##### Envoronment
+#### Envoronment
 * Ubuntu 14.04LTS , Debian 9 Stretch (Raspbian Stretch)
 * OpenSSL 1.1.1c, built from source
 * MariaDB server 10.3.22
 
-##### Pre-requisite
+#### Pre-requisite
 * To avoid `jemalloc` not found when running `cmake` on 64-bit CPU platform.
 ```
 apt-get install libjemalloc-dev
@@ -21,8 +21,7 @@ apt-get  install libpam0g-dev
 apt-get install libxml2-dev
 ```
 
-
-##### Download source
+#### Download source
 For those who work with limited disk space, It's suggested to do shallow clone from github
 (no need to downlowd lots of useless old history commits)
 ```
@@ -34,14 +33,14 @@ git checkout FETCH_HEAD
 ```
 
 
-##### Clean up before you build
+#### Clean up before you build
 * clean up the previous build (if exists). However it doesn't seem to reduce the size of `.git` ?
 ```
 git clean -xffd
 git submodule foreach --recursive git clean -xffd
 ```
 
-##### Configure before building
+#### Configure before building
 * In CMake you can turn off AUTH_PAM, it may not be essential in this version (default is "ON"), it can be
   disabled by setting `SET(PLUGIN_AUTH_PAM NO)`  at :
   `<MARIADB_SRC_FOLDER>/cmake/build_configurations/mysql_release.cmake`
@@ -53,7 +52,8 @@ git submodule foreach --recursive git clean -xffd
     remove the standslone folder which stores all the built files)
   * `WITH_UNIT_TESTS` can be `on` (default) and `off`, turn `off` if you don't need it
   * optional storage engines can be `off`, e.g:
-    `WITHOUT_ROCKSDB=true`, `WITHOUT_TOKUDB=true`, `WITHOUT_MROONGA=true`
+    `WITHOUT_ROCKSDB=true`, `WITHOUT_TOKUDB=true`, `WITHOUT_MROONGA=true`, `WITHOUT_CONNECT=true`
+
 ```
 cmake ..  -LH  -DBUILD_CONFIG=mysql_release   -DCMAKE_BUILD_TYPE=Debug \
     -DWITH_SSL=/PATH/TO/YOUR/OPENSSL/SRC/FOLDER  \
@@ -62,13 +62,12 @@ cmake ..  -LH  -DBUILD_CONFIG=mysql_release   -DCMAKE_BUILD_TYPE=Debug \
     >& cmake.log &
 ```
 
-##### Modify source files if building with GCC >= 6.3
+#### Modify source files if building with GCC >= 6.3
 
 Build errors will happen on the OS with GCC toolchain verison >= 6.3 , for example Raspbian Stretch. 
 MariaDB sets build option `-Werror` to compile each file, all warnings will be treated as error.
 
-###### Uninitialized warnings
-
+##### Uninitialized warnings
 ```
 /PATH/TO/MARIADB/SRC/mysys/my_context.c: In function ‘my_context_spawn’:
 /PATH/TO/MARIADB/SRC/mysys/my_context.c:106:3: error: ‘u.a[1]’ may be used uninitialized in this function [-Werror=maybe-uninitialized]
@@ -77,9 +76,9 @@ MariaDB sets build option `-Werror` to compile each file, all warnings will be t
                u.a[0], u.a[1]);
                ~~~~~~~~~~~~~~~
 cc1: all warnings being treated as errors
-mysys/CMakeFiles/mysys.dir/build.make:2606: recipe for target 'mysys/CMakeFiles/mysys.dir/my_context.c.o' failed
 ```
- By giving initial value zero to unused `u.a[1]`, the warning is gone. (**NOTE**: modify both files `/PATH/TO/MARIADB/SRC/mysys/my_context.c`, and `/PATH/TO/MARIADB/SRC/libmariadb/libmariadb/ma_context.c`)
+* By giving initial value zero to unused `u.a[1]`, the warning is gone.
+* Modify both files `mysys/my_context.c`, and `libmariadb/libmariadb/ma_context.c`
  
  ```
  my_context_spawn(struct my_context *c, void (*f)(void *), void *d)
@@ -92,10 +91,9 @@ mysys/CMakeFiles/mysys.dir/build.make:2606: recipe for target 'mysys/CMakeFiles/
          u.a[0], u.a[1]);
      ...............
 }
-
 ```
 
-###### Redefined parameters between OpenSSL and MariaDB
+##### Redefined parameters between OpenSSL and MariaDB
 ```
 /PATH/TO/OPENSSL/SRC/include/openssl/crypto.h:200:0: error: "CRYPTO_cleanup_all_ex_data" redefined [-Werror]
  # define CRYPTO_cleanup_all_ex_data() while(0) continue 
@@ -125,13 +123,12 @@ In file included from /PATH/TO/MARIADB/SRC/mysys_ssl/openssl.c:18:0:
  #define EVP_cleanup()
 ```
 
-workaround : comment off the refined parameters `CRYPTO_cleanup_all_ex_data`, `EVP_MD_CTX_init`, `EVP_CIPHER_CTX_init`, `EVP_cleanup`, on openssl side. 
+* Workaround : comment off the refined parameters `CRYPTO_cleanup_all_ex_data`, `EVP_MD_CTX_init`,
+  `EVP_CIPHER_CTX_init`, `EVP_cleanup`, on openssl side. 
+* [TODO] Better solution would be to recheck C header include sequence.
 
-**[TODO] Better solution would be to recheck C header include sequence.**
 
-
-###### Shift count error
-
+##### Shift count error
 ```
 [ 42%] Building C object libmariadb/libmariadb/CMakeFiles/mariadb_obj.dir/mariadb_stmt.c.o
 In file included from MARIADB_SRC_PATH/libmariadb/libmariadb/mariadb_stmt.c:46:0:
@@ -145,7 +142,7 @@ MARIADB_SRC_PATH/libmariadb/libmariadb/mariadb_stmt.c:476:3: note: in expansion 
 cc1: all warnings being treated as errors
 ```
 
-workaround : explicitly declare 64-bit varible for `def_temp2` in `ma_global.h` , for example :
+* Workaround : explicitly declare 64-bit varible for `def_temp2` in `ma_global.h` , for example :
 
 ```
 #define int8store(T,A)       do { uint def_temp= (uint) (A); \
@@ -157,14 +154,37 @@ workaround : explicitly declare 64-bit varible for `def_temp2` in `ma_global.h` 
 * `unsigned long long` may be defined in somewhere of this repo ?
 
 
-###### cast alignment error in mroonga
+##### Cast alignment error in mroonga (groonga)
+```
+[ 66%] Building C object storage/mroonga/vendor/groonga/lib/CMakeFiles/libgroonga.dir/alloc.c.o
+MARIADB_SRC_PATH/storage/mroonga/vendor/groonga/lib/alloc.c: In function ‘grn_ctx_alloc’:
+MARIADB_SRC_PATH/storage/mroonga/vendor/groonga/lib/alloc.c:419:16: error: cast increases required alignment of target type [-Werror=cast-align]
+       header = (int32_t *)((byte *)mi->map + mi->nref);
+                ^
+cc1: all warnings being treated as errors
+```
+or
+```
+[ 74%] Building C object storage/mroonga/vendor/groonga/plugins/suggest/CMakeFiles/suggest.dir/suggest.c.o
+In file included from MARIADB_SRC_PATH/storage/mroonga/vendor/groonga/include/groonga.h:22:0,
+                 from MARIADB_SRC_PATH/storage/mroonga/vendor/groonga/lib/grn.h:759,
+                 from MARIADB_SRC_PATH/storage/mroonga/vendor/groonga/lib/grn_ctx.h:21,
+                 from MARIADB_SRC_PATH/storage/mroonga/vendor/groonga/plugins/suggest/suggest.c:24:
+MARIADB_SRC_PATH/storage/mroonga/vendor/groonga/plugins/suggest/suggest.c: In function ‘cooccurrence_search’:
+MARIADB_SRC_PATH/storage/mroonga/vendor/groonga/include/groonga/groonga.h:1475:34: error: cast increases required alignment of target type [-Werror=cast-align]
+ #define GRN_RECORD_VALUE(obj) (*((grn_id *)GRN_BULK_HEAD(obj)))
+```
 
-no need to add build option `-Wcast-align`
-
-
+* It seems that there's no need to add `-Wcast-align` in `MARIADB_SRC_PATH/storage/mroonga/vendor/groonga/CMakeLists.txt`
+* It's commented off in [Groonga repo](https://github.com/groonga/groonga/blob/master/CMakeLists.txt), [(see this commit)](https://github.com/groonga/groonga/commit/65fd6d0b599ee1b120caa2ecc3bd9e17eae4695e#diff-af3b638bc2a3e6c650974192a53c7291) . However in [MariaDB server repo](https://github.com/MariaDB/server/blob/2f7d91bb6ce7bb34dd644e30590189bce37fb8f1/storage/mroonga/vendor/groonga/CMakeLists.txt#L161) , `-Wcast-align` is still set.
+* Workaround : simply remove `-Wcast-align`  in :
+  * `MARIADB_SRC_PATH/storage/mroonga/vendor/groonga/CMakeLists.txt`
+  * `MARIADB_SRC_PATH/storage/mroonga/vendor/groonga/configure.ac`
 
 
 ##### Build
+
+it might take 7 hours in Raspberry PI, for Intel core 5, it takes about an hour.
 ```
 make
 ```
@@ -172,6 +192,7 @@ make
 
 ######
 remove generated build option "-Wcast-align" in following make files :
+```
 ./storage/mroonga/vendor/groonga/lib/CMakeFiles/libgroonga.dir/flags.make
 ./storage/mroonga/vendor/groonga/plugins/suggest/CMakeFiles/suggest.dir/flags.make
 ./storage/mroonga/vendor/groonga/plugins/functions/CMakeFiles/index_column_functions.dir/flags.make
@@ -180,21 +201,13 @@ remove generated build option "-Wcast-align" in following make files :
 ./storage/mroonga/vendor/groonga/plugins/functions/CMakeFiles/string_functions.dir/flags.make
 ./storage/mroonga/vendor/groonga/plugins/functions/CMakeFiles/time_functions.dir/flags.make
 ./storage/mroonga/vendor/groonga/plugins/functions/CMakeFiles/vector_functions.dir/flags.make
-
-
-
-as the commit in Groonga repo:
-https://github.com/groonga/groonga/commit/65fd6d0b599ee1b120caa2ecc3bd9e17eae4695e#diff-af3b638bc2a3e6c650974192a53c7291
-
-seems that -Wcast-align in mroonga doesn't match groonga
-https://github.com/MariaDB/server/commit/13167e64898da6373fa8cab2ad89514eaf886412#diff-9f0f041990da73f0cbc97a7aafdfadccL163-L164
-
+```
 
 ------ MariaDB (Ubuntu 14.04) ---------------
 
 cmake ..  -LH  -DBUILD_CONFIG=mysql_release   -DCMAKE_BUILD_TYPE=Debug  -DWITH_SSL=/opt/custom/projects/c/security/openssl/  -DCMAKE_INSTALL_PREFIX=/usr/local/mariadb   >& cmake.log &
 
 
+#### Reference
+* [Get the code, build it, test it](https://mariadb.org/get-involved/getting-started-for-developers/get-code-build-test/)
 
-
-https://mariadb.org/get-involved/getting-started-for-developers/get-code-build-test/
