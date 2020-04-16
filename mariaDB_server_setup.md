@@ -68,10 +68,8 @@ Build errors will happen on the OS with GCC toolchain verison >= 6.3 , for examp
 MariaDB sets build option `-Werror` to compile each file, all warnings will be treated as error.
 
 ###### Uninitialized warnings
-  at `/PATH/TO/MARIADB/SRC/mysys/my_context.c`
+
 ```
-[ 10%] Building C object mysys/CMakeFiles/mysys.dir/my_rdtsc.c.o
-[ 10%] Building C object mysys/CMakeFiles/mysys.dir/my_context.c.o
 /PATH/TO/MARIADB/SRC/mysys/my_context.c: In function ‘my_context_spawn’:
 /PATH/TO/MARIADB/SRC/mysys/my_context.c:106:3: error: ‘u.a[1]’ may be used uninitialized in this function [-Werror=maybe-uninitialized]
    makecontext(&c->spawned_context, my_context_spawn_internal, 2,
@@ -81,7 +79,8 @@ MariaDB sets build option `-Werror` to compile each file, all warnings will be t
 cc1: all warnings being treated as errors
 mysys/CMakeFiles/mysys.dir/build.make:2606: recipe for target 'mysys/CMakeFiles/mysys.dir/my_context.c.o' failed
 ```
- By giving initial value zero to unused `u.a[1]`, the warning is gone.
+ By giving initial value zero to unused `u.a[1]`, the warning is gone. (**NOTE**: modify both files `/PATH/TO/MARIADB/SRC/mysys/my_context.c`, and `/PATH/TO/MARIADB/SRC/libmariadb/libmariadb/ma_context.c`)
+ 
  ```
  my_context_spawn(struct my_context *c, void (*f)(void *), void *d)
  {
@@ -153,6 +152,15 @@ workaround : explicitly declare 64-bit varible for `def_temp2` in `ma_global.h` 
                                  unsigned long long def_temp2= ((unsigned long long) (A)) >> 32; \
                              } while(0);
 ```
+**NOTE**:
+* modify both files `MARIADB_SRC_PATH/libmariadb/include/ma_global.h`, and `MARIADB_SRC_PATH/include/byte_order_generic.h`
+* `unsigned long long` may be defined in somewhere of this repo ?
+
+
+###### cast alignment error in mroonga
+
+no need to add build option `-Wcast-align`
+
 
 
 
