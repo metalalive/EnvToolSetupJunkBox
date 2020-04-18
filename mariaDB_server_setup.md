@@ -69,8 +69,8 @@ MariaDB sets build option `-Werror` to compile each file, all warnings will be t
 
 ##### Uninitialized warnings
 ```
-/PATH/TO/MARIADB/SRC/mysys/my_context.c: In function ‘my_context_spawn’:
-/PATH/TO/MARIADB/SRC/mysys/my_context.c:106:3: error: ‘u.a[1]’ may be used uninitialized in this function [-Werror=maybe-uninitialized]
+MARIADB_SRC_PATH/mysys/my_context.c: In function ‘my_context_spawn’:
+MARIADB_SRC_PATH/mysys/my_context.c:106:3: error: ‘u.a[1]’ may be used uninitialized in this function [-Werror=maybe-uninitialized]
    makecontext(&c->spawned_context, my_context_spawn_internal, 2,
    ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
                u.a[0], u.a[1]);
@@ -97,29 +97,29 @@ cc1: all warnings being treated as errors
 ```
 /PATH/TO/OPENSSL/SRC/include/openssl/crypto.h:200:0: error: "CRYPTO_cleanup_all_ex_data" redefined [-Werror]
  # define CRYPTO_cleanup_all_ex_data() while(0) continue 
-In file included from /PATH/TO/MARIADB/SRC/mysys_ssl/openssl.c:18:0:
-/PATH/TO/MARIADB/SRC/include/ssl_compat.h:42:0: note: this is the location of the previous definition
+In file included from MARIADB_SRC_PATH/mysys_ssl/openssl.c:18:0:
+MARIADB_SRC_PATH/include/ssl_compat.h:42:0: note: this is the location of the previous definition
  #define CRYPTO_cleanup_all_ex_data()
  
-In file included from /PATH/TO/MARIADB/SRC/mysys_ssl/openssl.c:33:0:
+In file included from MARIADB_SRC_PATH/mysys_ssl/openssl.c:33:0:
 /PATH/TO/OPENSSL/SRC/include/openssl/evp.h:538:0: error: "EVP_MD_CTX_init" redefined [-Werror]
  # define EVP_MD_CTX_init(ctx)    EVP_MD_CTX_reset((ctx))
-In file included from /PATH/TO/MARIADB/SRC/mysys_ssl/openssl.c:18:0:
-/PATH/TO/MARIADB/SRC/include/ssl_compat.h:29:0: note: this is the location of the previous definition
+In file included from MARIADB_SRC_PATH/mysys_ssl/openssl.c:18:0:
+MARIADB_SRC_PATH/include/ssl_compat.h:29:0: note: this is the location of the previous definition
  #define EVP_MD_CTX_init(X) do { memset((X), 0, EVP_MD_CTX_SIZE); EVP_MD_CTX_reset(X); } while(0)
 
-In file included from /PATH/TO/MARIADB/SRC/mysys_ssl/openssl.c:33:0:
+In file included from MARIADB_SRC_PATH/mysys_ssl/openssl.c:33:0:
 /PATH/TO/OPENSSL/SRC/include/openssl/evp.h:672:0: error: "EVP_CIPHER_CTX_init" redefined [-Werror]
  #  define EVP_CIPHER_CTX_init(c)      EVP_CIPHER_CTX_reset(c) 
-In file included from /PATH/TO/MARIADB/SRC/mysys_ssl/openssl.c:18:0:
-/PATH/TO/MARIADB/SRC/include/ssl_compat.h:31:0: note: this is the location of the previous definition
+In file included from MARIADB_SRC_PATH/mysys_ssl/openssl.c:18:0:
+MARIADB_SRC_PATH/include/ssl_compat.h:31:0: note: this is the location of the previous definition
  #define EVP_CIPHER_CTX_init(X) do { memset((X), 0, EVP_CIPHER_CTX_SIZE); EVP_CIPHER_CTX_reset(X); } while(0)
 
-In file included from /PATH/TO/MARIADB/SRC/mysys_ssl/openssl.c:33:0:
+In file included from MARIADB_SRC_PATH/mysys_ssl/openssl.c:33:0:
 /PATH/TO/OPENSSL/SRC/include/openssl/evp.h:958:0: error: "EVP_cleanup" redefined [-Werror]
  #  define EVP_cleanup() while(0) continue
-In file included from /PATH/TO/MARIADB/SRC/mysys_ssl/openssl.c:18:0:
-/PATH/TO/MARIADB/SRC/include/ssl_compat.h:40:0: note: this is the location of the previous definition
+In file included from MARIADB_SRC_PATH/mysys_ssl/openssl.c:18:0:
+MARIADB_SRC_PATH/include/ssl_compat.h:40:0: note: this is the location of the previous definition
  #define EVP_cleanup()
 ```
 
@@ -184,28 +184,17 @@ MARIADB_SRC_PATH/storage/mroonga/vendor/groonga/include/groonga/groonga.h:1475:3
 
 ##### Build
 
-it might take 7 hours in Raspberry PI, for Intel core 5, it takes about an hour.
-```
-make
-```
+* Simply run `make`
+* Build process takes about 24 hours in Raspberry PI 1, for Intel core 5, it takes about an hour.
+* Minimum disk space required : 5GB
 
 
-######
-remove generated build option "-Wcast-align" in following make files :
-```
-./storage/mroonga/vendor/groonga/lib/CMakeFiles/libgroonga.dir/flags.make
-./storage/mroonga/vendor/groonga/plugins/suggest/CMakeFiles/suggest.dir/flags.make
-./storage/mroonga/vendor/groonga/plugins/functions/CMakeFiles/index_column_functions.dir/flags.make
-./storage/mroonga/vendor/groonga/plugins/functions/CMakeFiles/math_functions.dir/flags.make
-./storage/mroonga/vendor/groonga/plugins/functions/CMakeFiles/number_functions.dir/flags.make
-./storage/mroonga/vendor/groonga/plugins/functions/CMakeFiles/string_functions.dir/flags.make
-./storage/mroonga/vendor/groonga/plugins/functions/CMakeFiles/time_functions.dir/flags.make
-./storage/mroonga/vendor/groonga/plugins/functions/CMakeFiles/vector_functions.dir/flags.make
-```
+##### Install
 
------- MariaDB (Ubuntu 14.04) ---------------
-
-cmake ..  -LH  -DBUILD_CONFIG=mysql_release   -DCMAKE_BUILD_TYPE=Debug  -DWITH_SSL=/opt/custom/projects/c/security/openssl/  -DCMAKE_INSTALL_PREFIX=/usr/local/mariadb   >& cmake.log &
+* Simply run `make install`
+* It's OK to run `make install` without `root` privilege,  then you must ensure that current user account  of your target Linux system has full access permission to the path `CMAKE_INSTALL_PREFIX`.
+* If you install mariadb on mounted disk (e.g. external USB disk), you must ensure the mounted disk is **NOT** Windows filesystem e.g. `FAT`/`FAT32`/`NTFS` [(reference)](https://askubuntu.com/questions/1111542/cant-change-ownership-of-mounted-device), otherwise you'd get permission denied error during installation.  
+* Minimum disk space required : 2.3GB
 
 
 #### Reference
