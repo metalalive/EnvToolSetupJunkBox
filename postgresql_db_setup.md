@@ -22,7 +22,7 @@ make check >& regression_test.log &
 make install >& install.log &
 ```
 
-After installation, ensure you have seperate account (e.g. user account `postgresql`) in your OS which has full access permissions to all these binary files / library files. It is for security.
+After installation, ensure you have seperate non-root account (e.g. user account `postgresql`) in your OS which has full access permissions to all these binary files / library files. It is for security.
 
 
 --------------------------------------------------------------------
