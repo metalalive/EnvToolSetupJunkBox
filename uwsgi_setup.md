@@ -68,10 +68,33 @@ def application(env, start_resp_cb):
     --wsgi-file  PATH/TO/YOUR/PYTHON/APP  --enable-threads --processes 1  --threads 1
 ```
 
+#### Run it with config file
+
+Assume your config file `xxx.ini` looks like this :
+```
+[uwsgi]
+http-socket = 127.0.0.1:8005
+virtualenv  = PATH/TO/YOUR/VIRTURLENV
+pythonpath = PATH/TO/YOUR/PYTHON/SRCCODE
+wsgi-file  = YOUR_WEB_APP_ENTRY.py
+enable-threads = true
+master    = true
+processes = 1
+workers   = 2
+pidfile   = pid.log
+```
+
+you have :
+```
+./uwsgi --ini=xxx.ini >& runtime.log &
+```
+
 
 
 #### Reference
 
 * [PEP3333](https://www.python.org/dev/peps/pep-3333/)
+* [uWSGI options](https://uwsgi-docs.readthedocs.io/en/latest/Options.html)
+* [Deploy Django behind uWSGI and Nginx](https://www.vndeveloper.com/deploy-django-in-sub-directory-behind-uwsgi-and-nginx-on-centos-7/?fbclid=IwAR109_JIrhh_gssvbPvJ8FM6smBBW4w8bLxawx1dv9SoLauZLCf0z7JOMGI)
 
 
