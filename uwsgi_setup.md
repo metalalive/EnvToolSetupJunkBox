@@ -16,15 +16,14 @@ all these software above are built from source
    * simply remove `PyEval_InitThreads()`, which will do nothing since `python 3.9`
 * For those who built python from source, specify python library source by :
    * add `libdir = "/PATH/TO/YOUR/PYTHON/SRC/HOME"` in `plugins/python/uwsgiplugin.py`
-   ```
-   libdir = "/PATH/TO/YOUR/PYTHON/SRC/HOME
+   ```Shell
+   libdir = /PATH/TO/YOUR/PYTHON/SRC/HOME
    libpath = '%s/libpython%s.a' % (libdir, version)
    ```
-   * build uWSGI with the command:
+   * build uWSGI with specified python version (e.g. in my case, python 3.9):
+   ```Shell
+   make all  PYTHON=/PATH/TO/YOUR/PYTHON/SRC/HOME/python
    ```
-   make all  PYTHON=/PATH/TO/YOUR/PYTHON/SRC/HOME
-   ```
-
 
 
 
@@ -32,7 +31,7 @@ all these software above are built from source
 
 * Example Python application to hook up wsgi middleware
 
-```
+```Python
 def application(env, start_resp_cb):
     # check out more environment variables supported in PEP-3333
     path = env.get('PATH_INFO')
@@ -61,17 +60,19 @@ def application(env, start_resp_cb):
 ```
 
 
-* command to launch uWSGI (don't run it with root privilege)
+* command to launch uWSGI
+  * don't run it with root privilege
+  * each `uwsgi` instance can only bind one application, for hosting multiple applications simultaneously, run multiple uWSGIs instead.
 
-```
+```Tcsh
 ./uwsgi --http 127.0.0.1:8006 --virtualenv  PATH/TO/YOUR/VIRTUALENV \
     --wsgi-file  PATH/TO/YOUR/PYTHON/APP  --enable-threads --processes 1  --threads 1
 ```
 
-#### Run it with config file
+#### Run your application with config file
 
 Assume your config file `xxx.ini` looks like this :
-```
+```Windows Registry Entries
 [uwsgi]
 http-socket = 127.0.0.1:8005
 virtualenv  = PATH/TO/YOUR/VIRTURLENV
