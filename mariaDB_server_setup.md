@@ -196,6 +196,33 @@ MARIADB_SRC_PATH/storage/mroonga/vendor/groonga/include/groonga/groonga.h:1475:3
 * If you install mariadb on mounted disk (e.g. external USB disk), you must ensure the mounted disk is **NOT** Windows filesystem e.g. `FAT`/`FAT32`/`NTFS` [(reference)](https://askubuntu.com/questions/1111542/cant-change-ownership-of-mounted-device), otherwise you'd get permission denied error during installation.  
 * Minimum disk space required : 2.3GB
 
+#### Configuration after Installation
+
+To start `mysqld` at boot time you have to copy `support-files/mysql.server` to the right place for your system
+
+PLEASE REMEMBER TO SET A PASSWORD FOR THE MariaDB root USER ! To do so, start the server, then issue the following commands:
+```
+./bin/mysqladmin -u root password 'new-password'
+./bin/mysqladmin -u root -h localhost password 'new-password'
+```
+
+Alternatively you can run `./bin/mysql_secure_installation`, which will also give you the option of removing the test
+databases and anonymous user created by default.  This is strongly recommended for production servers.
+
+See the MariaDB Knowledgebase at http://mariadb.com/kb or the MySQL manual for more instructions.
+
+You can start the MariaDB daemon with:
+```
+./bin/mysqld_safe --datadir='./data'
+```
+
+You can test the MariaDB daemon with `mysql-test-run.pl`
+```
+cd './mysql-test' ; perl mysql-test-run.pl
+```
+
+Please report any problems at http://mariadb.org/jira
+
 
 #### Reference
 * [Get the code, build it, test it](https://mariadb.org/get-involved/getting-started-for-developers/get-code-build-test/)
