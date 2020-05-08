@@ -224,6 +224,8 @@ cd './mysql-test' ; perl mysql-test-run.pl
 Please report any problems at http://mariadb.org/jira
 
 
+
+
 #### Reference
 * [Get the code, build it, test it](https://mariadb.org/get-involved/getting-started-for-developers/get-code-build-test/)
-
+* [How To Reset Your MySQL or MariaDB Root Password](https://www.digitalocean.com/community/tutorials/how-to-reset-your-mysql-or-mariadb-root-password)
