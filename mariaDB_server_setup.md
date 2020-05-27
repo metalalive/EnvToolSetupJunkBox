@@ -294,6 +294,11 @@ SELECT table_name, ROUND(((data_length + index_length) / 1024), 2) `Size (KB)`\
     ORDER BY (data_length + index_length)  DESC;
 ```
 
+#### Drop all tables in a database, but still keep database itself
+```
+SELECT CONCAT('DROP TABLE IF EXISTS `', TABLE_SCHEMA, '`.`', TABLE_NAME, '`;') \
+FROM information_schema.TABLES WHERE TABLE_SCHEMA = 'mydb';
+```
 
 
 #### Reference
