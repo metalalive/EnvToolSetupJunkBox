@@ -224,6 +224,50 @@ cd './mysql-test' ; perl mysql-test-run.pl
 Please report any problems at http://mariadb.org/jira
 
 
+-----------------------------------------------------------------------
+
+### Useful commands for database management
+
+start MariaDB server:
+```
+sudo -u <OS_ACCOUNT_FOR_MARIADB>  /PATH/TO/MARIADB/INSTALL/bin/mysqld_safe  --datadir='PATH/TO/DATABASE/FOLDER'  &
+```
+
+Shutdown MariaDB server
+```
+sudo -u <OS_ACCOUNT_FOR_MARIADB>  kill -SIGTERM <MARIADB_PID>
+```
+
+Login MariaDB through interactive command line interface :
+```
+sudo -u <OS_ACCOUNT_FOR_MARIADB>  /PATH/TO/MARIADB/INSTALL/bin/mysql -u  <USER_ACCOUNT> -p -h <IP_OR_DOMAIN_NAME>
+```
+
+List all existing databases
+```
+SHOW DATABASES;
+```
+
+switch to specific database
+```
+USE <YOUR_DATABASE_NAME>;
+```
+
+List all columns (and their attributes) of a database table
+```
+SHOW COLUMNS FROM <YOUR_TABLE_NAME>;
+```
+
+
+List attributes of all available database users
+```
+SELECT  host,user,max_connections,max_user_connections  FROM mysql.user
+```
+
+Check user privilege (Note don't list privilege fields of any user in `mysql.user`, they're NOT synchronized with `GRANT` command)
+```
+SHOW GRANTS FOR  YOUR_USER_ACCOUNT@YOUR_HOSTNAME;
+```
 
 
 #### Reference
