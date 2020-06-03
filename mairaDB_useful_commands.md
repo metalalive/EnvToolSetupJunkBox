@@ -81,3 +81,19 @@ SELECT TABLE_NAME,COLUMN_NAME, REFERENCED_TABLE_NAME,REFERENCED_COLUMN_NAME \
      and REFERENCED_TABLE_NAME = 'table_name';
 ```
 
+
+#### Create self-referencing table
+```
+CREATE TABLE `your_table` (`id` integer AUTO_INCREMENT NOT NULL PRIMARY KEY, `parent_id` integer NULL);
+ALTER TABLE `your_table` ADD CONSTRAINT `your_contraint_name` FOREIGN KEY (`parent_id`) REFERENCES `your_table` (`id`);
+```
+Note that `NULL` has to be allowed in `parent_id`, otherwise you'll be in trouble when deleting rows in the table.
+
+
+#### Delete all rows in a self-referencing table
+```
+UPDATE 'your_table' SET 'parent_id' = NULL WHERE 'parent_id' IS NOT NULL;
+DELETE FROM 'your_table';
+```
+
+
