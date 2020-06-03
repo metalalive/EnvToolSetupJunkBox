@@ -73,5 +73,11 @@ SELECT table_name, ROUND(((data_length + index_length) / 1024), 2) `Size (KB)`\
 SELECT CONCAT('DROP TABLE IF EXISTS `', TABLE_SCHEMA, '`.`', TABLE_NAME, '`;') \
 FROM information_schema.TABLES WHERE TABLE_SCHEMA = 'mydb';
 ```
-
+#### List all foreign key references to a database table
+```
+SELECT TABLE_NAME,COLUMN_NAME, REFERENCED_TABLE_NAME,REFERENCED_COLUMN_NAME \
+     FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE \
+     WHERE REFERENCED_TABLE_SCHEMA = 'da_name' \
+     and REFERENCED_TABLE_NAME = 'table_name';
+```
 
