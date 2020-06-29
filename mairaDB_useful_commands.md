@@ -59,6 +59,10 @@ to
 ```
 `DATABASE_NAME`.`TABLE_NAME`
 ```
+Example #1 : To modify max_user_connections of a DB user, you have :
+```
+GRANT USAGE ON `DATABASE_NAME`.* TO  'DB_USERNAME'@'IP_OR_DOMAIN_NAME'  WITH max_user_connections <NEW_VALUE>;
+```
 
 ##### List table size of a specific database in descending order
 ```
@@ -97,3 +101,6 @@ DELETE FROM 'your_table';
 ```
 
 
+
+### Reference
+* [Max_used_connections per user/account](https://www.fromdual.com/max-used-connections-per-user-account)
