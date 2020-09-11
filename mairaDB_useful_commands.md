@@ -6,10 +6,14 @@
 ```
 sudo -u <OS_ACCOUNT_FOR_MARIADB>  /PATH/TO/MARIADB/INSTALL/bin/mysqld_safe  --datadir='PATH/TO/DATABASE/FOLDER'  &
 ```
+or launch DB server with configuration file in which you can set all valid variables :
+```
+sudo -u <OS_ACCOUNT_FOR_MARIADB>  /PATH/TO/MARIADB/INSTALL/bin/mysqld_safe  --defaults-file='PATH/TO/CONFIG_FILE'  &
+```
 
 ##### Shutdown MariaDB server
 ```
-sudo -u <OS_ACCOUNT_FOR_MARIADB>  kill -SIGTERM <MARIADB_PID>
+sudo -u <OS_ACCOUNT_FOR_MARIADB>  kill -SIGTERM  <mysqld_PID>
 ```
 
 ##### Login MariaDB through interactive command line interface :
@@ -101,6 +105,30 @@ DELETE FROM 'your_table';
 ```
 
 
+### Prepare Configuratio File
+
+Example settings below, it is good practice to turn on `general_log` ONLY for debugging purpose since it prints EVERY query user executed
+```
+[mariadb]
+datadir=./data
+log_error=localhost.err
+log_warnings=9
+general_log=1
+general_log_file=localhost1234.log
+```
+
+Some variables can also be turned on/off at runtime (after database server started) using `SET GLOBAL` command in mysql CLI.
+Note some variables are read-only cannot be modified (e.g. `log_error`)
+```
+> SET GLOBAL <WRITEABLE_VARIABLE_NAME> = <NEW_VALUE>;
+> SHOW GLOBAL VARIABLES LIKE <VARIABLE_NAME>;
+```
+
+
 
 ### Reference
 * [Max_used_connections per user/account](https://www.fromdual.com/max-used-connections-per-user-account)
+* [All Supported System Variables](https://mariadb.com/kb/en/replication-and-binary-log-system-variables/)
+* [Configuration Files](https://mariadb.com/kb/en/configuring-mariadb-with-option-files/)
+* [MariaDB logs](https://mariadb.com/kb/en/overview-of-mariadb-logs/)
+
