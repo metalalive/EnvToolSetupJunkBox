@@ -94,7 +94,7 @@ task_track_started = True
 In `alltasks.py`
 
 ```python
-from .celery import app as celery_app
+from proj123.init456.celery import app as celery_app
 
 @celery_app.task(bind=True)
 def func1(self, **kwargs):
