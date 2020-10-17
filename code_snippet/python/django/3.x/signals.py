@@ -1,4 +1,3 @@
-```python
 from django.db     import  models
 
 def user_roles_changing_handler(sender, **kwargs):
@@ -46,5 +45,6 @@ models.signals.post_save.connect(user_postsave_handler, sender=GenericUserProfil
 models.signals.m2m_changed.connect(user_roles_changing_handler, sender=GenericUserProfile.roles.through)
 models.signals.m2m_changed.connect(user_grps_changing_handler, sender=GenericUserProfile.groups.through)
 
-
-```
+# Reference
+# https://stackoverflow.com/questions/23795811/django-accessing-manytomany-fields-from-post-save-signal
+# https://docs.djangoproject.com/en/dev/ref/signals/#m2m-changed
