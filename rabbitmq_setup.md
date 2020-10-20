@@ -69,7 +69,7 @@ Plugin configuration has changed. Restart RabbitMQ for changes to take effect.
 The downside is that you must restart rabbitmq server for the change to take effect.
 
 
-* Go to `http://localhost:15672/#/queues` in web browser, login with the account you created, (be aware of the permission, or administrator user tag)
+* Go to `http://localhost:15672` in web browser, login with the account you created, (be aware of the permission, or just set administrator user tag using `set_user_tags` )
 
 * once you are logged-in, you can :
   * clean up the content  (purge) in any queue, or delete entire queue
