@@ -104,6 +104,13 @@ UPDATE 'your_table' SET 'parent_id' = NULL WHERE 'parent_id' IS NOT NULL;
 DELETE FROM 'your_table';
 ```
 
+#### reset auto-increment of a table
+According to [this stackoverflow answer](https://stackoverflow.com/a/8923132/9853105) , If you use InnoDB as storage engine, you must ensure the reset value is greater than (not equal to) current maximum index (in the pk field of the table)
+
+```
+ALTER TABLE your_table_name AUTO_INCREMENT = <ANY_POSITIVE_INTEGER_VALUE>;
+```
+
 
 ### Prepare Configuratio File
 
