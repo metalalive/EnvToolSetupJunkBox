@@ -104,15 +104,73 @@ UPDATE 'your_table' SET 'parent_id' = NULL WHERE 'parent_id' IS NOT NULL;
 DELETE FROM 'your_table';
 ```
 
-#### reset auto-increment of a table
+#### Reset auto-increment of a table
 According to [this stackoverflow answer](https://stackoverflow.com/a/8923132/9853105) , If you use InnoDB as storage engine, you must ensure the reset value is greater than (not equal to) current maximum index (in the pk field of the table)
 
-```
+``` 
 ALTER TABLE your_table_name AUTO_INCREMENT = <ANY_POSITIVE_INTEGER_VALUE>;
 ```
 
+#### Character set and  Collation in database or table 
 
-### Prepare Configuratio File
+Quick reminder:
+* One character set can have one default collation, and more than one collations, while one collation cannot be in more than one different character sets.
+* Each time user could sends a query with specific collation in the character defined in table schema.
+* User can specify character set and default collation at database level, table level, or column level.
+* Conventionally collations naming starts with character set name, ends with case sensitivity (e.g. `_ci` means case insensitive, `_cs` means case sensitive). However case-sensitive collations (`_cs`) may not be provided, in such case, you could use `_bin` instead:
+
+> e.g. in MariaDB, character set `utf8` has collation like `utf8_unicode_ci` , but doesn't have case-sensitive version like `utf8_unicode_cs`, so you should try using `utf8_bin` as substitution
+
+*  Character set `utf8` is deprecated, it is recommended to use `utf8mb4` instead.
+ 
+##### Check out character sets and collations
+
+To view all available collations of certain charset (e.g. utf8), you have:
+```
+SHOw COLLATION LIKE 'utf8_%';
+```
+or all collations which end with `_cs`:
+```
+SHOw COLLATION LIKE '%_cs';
+```
+
+To view default collation of a database table (then see the `collation` column)
+```
+SHOW TABLE STATUS WHERE name LIKE '<YOUR_TABLE_NAME>';
+```
+
+To view default character set and collation of all databases
+```
+SELECT schema_name, default_character_set_name, default_collation_name FROM information_schema.SCHEMATA;
++--------------------+----------------------------+------------------------+
+| schema_name        | default_character_set_name | default_collation_name |
++--------------------+----------------------------+------------------------+
+| performance_schema | utf8                       | utf8_general_ci        |
+| mysql              | latin1                     | latin1_swedish_ci      |
+| information_schema | utf8                       | utf8_general_ci        |
+| <YOUR_DATABASE>    | utf8mb4                    | utf8mb4_bin            |
++--------------------+----------------------------+------------------------+
+```
+
+##### Change character sets and collations
+
+For example, convert to charset `utf8` and default collation `utf8mb4_bin` 
+
+At database level:
+```
+ALTER DATABASE <YOUR_DATABASE_NAME> CHARACTER SET = 'utf8mb4' COLLATE = 'utf8mb4_bin';
+> Query OK, 1 row affected (0.042 sec)
+```
+
+At table level
+```
+ALTER TABLE <YOUR_DATABASE_TABLE_NAME> CONVERT TO CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_bin';
+> Query OK, 7 rows affected (2.408 sec)
+> Records: 7  Duplicates: 0  Warnings: 0
+```
+
+
+#### Prepare Configuratio File
 
 Example settings below, it is good practice to turn on `general_log` ONLY for debugging purpose since it prints EVERY query user executed
 ```
@@ -138,4 +196,11 @@ Note some variables are read-only cannot be modified (e.g. `log_error`)
 * [All Supported System Variables](https://mariadb.com/kb/en/replication-and-binary-log-system-variables/)
 * [Configuration Files](https://mariadb.com/kb/en/configuring-mariadb-with-option-files/)
 * [MariaDB logs](https://mariadb.com/kb/en/overview-of-mariadb-logs/)
+* [MariaDB: Setting Character Sets and Collations](https://mariadb.com/kb/en/setting-character-sets-and-collations/)
+* [Difference between utf8_general_ci and utf8_unicode_ci?](https://stackoverflow.com/questions/766809/)
+* [How to set the encoding for the tables' char columns in django?](https://stackoverflow.com/questions/1198486/)
+* [How do I see what character set a MySQL database / table / column is?](https://stackoverflow.com/q/1049728/9853105)
+* [Case sensitive search in Django, but ignored in Mysql](https://stackoverflow.com/q/28073941/9853105)
+
+
 
