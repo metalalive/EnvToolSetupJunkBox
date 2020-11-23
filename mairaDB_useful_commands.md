@@ -169,6 +169,36 @@ ALTER TABLE <YOUR_DATABASE_TABLE_NAME> CONVERT TO CHARACTER SET 'utf8mb4' COLLAT
 > Records: 7  Duplicates: 0  Warnings: 0
 ```
 
+##### Specify collation in a query
+
+Assume you attempts to retrieve the record in `<YOUR_TABLE>` (as shown below)
+
+```
++----+----------+
+| id | username |
++----+----------+
+| 39 | JonSnow  |
++----+----------+
+```
+
+You will get nothing if specifying any collation that ends with `_bin` or `_cs`:
+
+```
+SELECT id, username FROM <YOUR_TABLE> WHERE username LIKE 'JoNsNoW' COLLATE utf8mb4_bin;
+> Empty set (0.016 sec)
+```
+
+Or get the record by specifying case-insensitive collation:
+```
+SELECT id, username FROM <YOUR_TABLE> WHERE username LIKE 'JoNsNoW' COLLATE utf8mb4_unicode_ci;
+> +----+----------+
+> | id | username |
+> +----+----------+
+> | 39 | JonSnow  |
+> +----+----------+
+> 1 row in set (0.001 sec)
+```
+
 
 #### Prepare Configuratio File
 
