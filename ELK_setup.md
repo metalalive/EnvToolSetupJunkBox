@@ -260,9 +260,20 @@ where do we go NOW
 Recheck whether elasticsearch received the message you typed above , by fetching data through elasticsearch RESTful API :
 
 <pre><code>
-curl -H "Content-Type: application/json" -H "Accept: application/json; indent=4;"   -H "X-ANTI-CSRF-TOK: xxiixixxo"    --request GET  http://localhost:9200/logstash-*/_search
+curl -H "Content-Type: application/json" -H "Accept: application/json; indent=4;" \
+    -H "X-ANTI-CSRF-TOK: xxiixixxo"    --request GET \
+    http://localhost:9200/logstash-*/_search
 
-{"took":2,"timed_out":false,"_shards":{"total":5,"successful":5,"skipped":0,"failed":0},"hits":{"total":2,"max_score":1.0,"hits":[{"_index":"logstash-2020.11.29","_type":"logs","_id":"xxxxxx-xxx","_score":1.0,"_source":{"@version":"1","host":"0.0.0.0","@timestamp":"2020-11-29T03:55:44.050Z","message":"where Do we GO"}},{"_index":"logstash-2020.11.29","_type":"logs","_id":"xxxxxxxxx-xxxx","_score":1.0,"_source":{"@version":"1","host":"0.0.0.0","@timestamp":"2020-11-29T04:00:55.799Z","message":"where do we go NOW"}}]}}
+{"took":2,"timed_out":false,"_shards":{"total":5,"successful":5,"skipped":0,"failed":0},
+    "hits":{"total":2,"max_score":1.0, "hits":[
+        {"_index":"logstash-2020.11.29","_type":"logs","_id":"xxxxxx-xxx","_score":1.0,"_source":{
+            "@version":"1","host":"0.0.0.0","@timestamp":"2020-11-29T03:55:44.050Z","message":"where Do we GO"
+        }},
+        {"_index":"logstash-2020.11.29","_type":"logs","_id":"xxxxxxxxx-xxxx","_score":1.0,"_source":{
+            "@version":"1","host":"0.0.0.0","@timestamp":"2020-11-29T04:00:55.799Z","message":"where do we go NOW"
+        }}
+    ]
+}}
 
 </code></pre>
 
