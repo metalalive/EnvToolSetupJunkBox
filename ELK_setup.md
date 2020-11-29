@@ -280,3 +280,9 @@ curl -H "Content-Type: application/json" -H "Accept: application/json; indent=4;
 the visible fields of returned structure depends on your configuration, but you can expect to see the message you typed previously in logstash command.
 
 
+#### Reference
+
+* [Elastic Stack 5.0 Installation Guide](https://github.com/jimfilippou/elastic-stack/blob/master/README.md)
+* [How To Install Elasticsearch, Logstash, and Kibana (ELK Stack) on Ubuntu 14.04](https://www.digitalocean.com/community/tutorials/how-to-install-elasticsearch-logstash-and-kibana-elk-stack-on-ubuntu-14-04)
+* [How to use Elasticsearch, Logstash and Kibana to visualise logs in Python in realtime](https://www.freecodecamp.org/news/how-to-use-elasticsearch-logstash-and-kibana-to-visualise-logs-in-python-in-realtime-acaab281c9de/)
+
