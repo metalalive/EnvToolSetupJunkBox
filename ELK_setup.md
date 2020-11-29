@@ -217,11 +217,18 @@ Add following configuation options :
 
 ##### verify the installed package
 
-Open browser and navigate to kibana front-end  (default `http://localhost:5601`), Kibana will redirect to the page with title "Configure an index pattern".
-You will need to specify default index pattern, the default index pattern could start with `logstash-*` for Kibana to identify elasticsearch index then run search and analytics .
+Open browser and navigate to kibana front-end  (default `http://localhost:5601`)
 
-Simply press `create` button, you'll set default index pattern 
+Initially Kibana redirect to the page with title **Configure an index pattern**, which means you need to specify default index pattern at first.
 
+**Index pattern** is used for Kibana dashboard to identify elasticsearch index then run search and analytics .
+
+How to create valid index pattern:
+* Index patterns can be explicitly loaded into elasticsearch server through its RESTful API,
+* Kibana seems to check all stored records in elasticsearch server to figure out what are valid index patterns. For example if you inserted record to elasticsearch with index `logstash-xxxx` or `logstash-abcabcabc`,  the index pattern starts with `logstash-*` becomes valid to choose at Kibana frontend ,
+
+
+After you choose valid index pattern, you can simply press `create` button, for creating default index pattern.
 
 
 
@@ -277,7 +284,9 @@ curl -H "Content-Type: application/json" -H "Accept: application/json; indent=4;
 
 </code></pre>
 
-the visible fields of returned structure depends on your configuration, but you can expect to see the message you typed previously in logstash command.
+The visible fields of returned structure depends on your configuration, but you can expect to see the message you typed previously in logstash command.
+
+For Kibana, you choose default index pattern at its frontend dashboard, then navigate to **Discover page** , adjust time period to search log message (query records) from elasticsearch.
 
 
 #### Reference
