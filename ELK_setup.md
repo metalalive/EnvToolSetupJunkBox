@@ -6,7 +6,7 @@ Ubuntu version : 14.04 LTS
 | ------------- | ------------- |
 | [Elasticsearch](#elasticsearch) | 5.6.16        |
 | [Logstash](#logstash)      | 5.6.8         |
-| Kibana        | 5.x.x         |
+| [Kibana](#kibana)        | 5.6.16         |
 | [Java](#java-8-open-jdk)          | 1.8.0_222     |
 
 ### Installation
@@ -24,7 +24,7 @@ Ubuntu version : 14.04 LTS
 > apt-cache policy openjdk-8-jre-headless
 ```
 
-* install (headless version of JRE should be sufficient to run ELK)
+* install, headless version of JRE should be sufficient to run ELK, no need to install JDK (`javac`)
 ```
 > sudo apt-get install openjdk-8-jre-headless -y
 ```
@@ -77,7 +77,8 @@ Commands :
 sudo /usr/share/logstash/bin/logstash -f /YOUR/PATH/TO/sample.conf --path.settings /etc/logstash
 ```
 
-where the sample code in `/YOUR/PATH/TO/sample.conf`
+where the sample code in `/YOUR/PATH/TO/sample.conf`.
+in this case, every single line you typed is wrapped to certain well-defined log structure in logstash , then output to stdout
 ```
 input { 
   stdin { } 
@@ -171,10 +172,10 @@ service elasticsearch start
 service elasticsearch stop
 ```
 
-command to verify
+command to verify whether elasticsearch server is up, by retrieving its general information
 
 ```
-curl http://localhost:9200
+curl --request GET http://localhost:9200
 ```
 
 expected result:
@@ -197,7 +198,74 @@ expected result:
 ```
 
 
+#### Kibana
+
+##### Installation
+
+Similar to the installation steps in [logstash](#logstash) and [elasticsearch](#elasticsearch) , except the [download link](https://artifacts.elastic.co/downloads/kibana/kibana-5.6.16-amd64.deb) is different, and Kibana doesn't require Java Runtime Environment.
 
 
+##### Quick-start configuration
+**Note** : this configuration does not include authentication / permission settings
+
+Add following configuation options :
+* `server.port: <PORT_NUMBER>` , 5601 by default
+* `server.host: "<YOUR_HOSTNAME>"`, localhost by default
+* `server.name: "<YOUR_SERVERNAME>"`
+* `elasticsearch.url: <YOUR_ES_URL>`, `http://localhost:9200` by default
+
+
+##### verify the installed package
+
+Open browser and navigate to kibana front-end  (default `http://localhost:5601`), Kibana will redirect to the page with title "Configure an index pattern".
+You will need to specify default index pattern, the default index pattern could start with `logstash-*` for Kibana to identify elasticsearch index then run search and analytics .
+
+Simply press `create` button, you'll set default index pattern 
+
+
+
+
+
+-----------------------------
+
+#### Verify all together
+
+Turn on service elasticsearch and kibana.
+
+Logstash command is almost the same, except different sample configuation file
+```
+sudo /usr/share/logstash/bin/logstash -f /YOUR/PATH/TO/sample2.conf --path.settings /etc/logstash
+```
+
+where the sample code in `/YOUR/PATH/TO/sample2.conf`.
+in this case, every line you typed is sent to elasticsearch server and store in there.
+```
+input { 
+  stdin { } 
+}
+output {
+    elasticsearch {
+        hosts => ["localhost:9200"]
+    }
+}
+
+```
+
+Result: type any string
+```
+where Do we GO
+where do we go NOW
+```
+
+Recheck whether elasticsearch received the message you typed above , by fetching data through elasticsearch RESTful API :
+
+<pre><code>
+curl -H "Content-Type: application/json" -H "Accept: application/json; indent=4;"   -H "X-ANTI-CSRF-TOK: xxiixixxo"    --request GET  http://localhost:9200/logstash-*/_search
+
+{"took":2,"timed_out":false,"_shards":{"total":5,"successful":5,"skipped":0,"failed":0},"hits":{"total":2,"max_score":1.0,"hits":[{"_index":"logstash-2020.11.29","_type":"logs","_id":"xxxxxx-xxx","_score":1.0,"_source":{"@version":"1","host":"0.0.0.0","@timestamp":"2020-11-29T03:55:44.050Z","message":"where Do we GO"}},{"_index":"logstash-2020.11.29","_type":"logs","_id":"xxxxxxxxx-xxxx","_score":1.0,"_source":{"@version":"1","host":"0.0.0.0","@timestamp":"2020-11-29T04:00:55.799Z","message":"where do we go NOW"}}]}}
+
+</code></pre>
+
+the visible fields of returned structure depends on your configuration, but you can expect to see the message you typed previously in logstash command.
 
 
