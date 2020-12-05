@@ -207,3 +207,46 @@ Note :
   * the `ctx` is a map for a document to access its metadata or field data.
   * `ctx` has several attributes to access: `_source`, `_index`, `_type`, `_id`, `_version`, `_routing`, `_parent` ... etc
 
+
+#### Delete an existing document
+
+By simply send `DELETE` request with the document ID you attempt to delete, see [reference](https://www.elastic.co/guide/en/elasticsearch/reference/5.6/_deleting_documents.html)
+
+```
+curl  -H "Content-Type: application/json"  -H "Accept: application/json;"  --data-binary  '@REQ_BODY_FILE' \
+    --request DELETE "http://HOSTNAME:PORT/CHOSEN_INDEX/CHOSEN_TYPE/USER_DEFINED_ID?pretty"
+```
+
+
+### Batch processing
+
+```
+curl -s -H "Content-Type: application/x-ndjson"  -H "Accept: application/json;"  --data-binary  '@REQ_BODY_FILE' \
+    --request POST  "http://HOSTNAME:PORT/_bulk?pretty"
+```
+According to [the general structure of the endpoint `_bulk`](https://www.elastic.co/guide/en/elasticsearch/reference/5.6/docs-bulk.html#docs-bulk) , the file that contains request body data (`REQ_BODY_FILE`) may look like:
+```json
+// Here are all possible payloads in one API call, the actual payload data of request body depends on your use cases.
+{"index": {"_index": CHOSEN_INDEX, "_type": CHOSEN_TYPE}}
+{"field_name_1": 1234, "field_name_2": "some_value"}
+{"create": {"_index": CHOSEN_INDEX, "_type": CHOSEN_TYPE, "_id": USER_DEFINED_ID}}
+{"field_name_3": 456, "field_name_4": "some_value"}
+{"update": {"_index": CHOSEN_INDEX, "_type": CHOSEN_TYPE, "_id": USER_DEFINED_ID}}
+{"doc": {"field_name_5": "some_value", "field_name_6": 78}}
+{"update": {"_index": CHOSEN_INDEX, "_type": CHOSEN_TYPE, "_id": USER_DEFINED_ID}}
+{"script": {"source": "ctx._source.remove(params.del_field_name)", "lang":"painless", "params":{"del_field_name": "field_name_7"}}}
+{"delete": {"_index": CHOSEN_INDEX, "_type": CHOSEN_TYPE, "_id": USER_DEFINED_ID}}
+
+```
+
+Note:
+* The header `content-type` should be `application/x-ndjson` , not `application/json`
+* If index (and type) is provided in URI (e.g. `/CHOSEN_INDEX/_bulk` or `/CHOSEN_INDEX/CHOSEN_TYPE/_bulk`), then it is NOT necessary to explicitly provide the values in `_index` field (and `_type` field)  of each payload of request body.
+* The command part for each payload can be `index`, `create`, `update`, `delete`.
+* Both of `index` and `create` are used to add a new document, the (only ?) difference seems to be : `index` command could automatically generate ID value for a new document if you don't provide `_id` field, while `create` command requires `_id` field specified in the payload of request body. 
+* If you need to add, update, and delete fields of a document in one shot , you have to separate `doc` field (for adding and updating fields) and `script` field (for deleting fields) into 2 payloads, DO NOT put them into one payload otherwise [you will get validation failure](https://stackoverflow.com/a/65147914/9853105)
+* official documentation describes that the request body should end with newline character (ASCII: `0xA`) for bulk API, [But in some versions, the bulk API call seems to work even you don't do so](https://stackoverflow.com/questions/36766471/validation-failed-1-no-requests-added-in-bulk-indexing-elasticsearch#comment115145269_36769643) .... Keep that in mind.
+
+
+
+
