@@ -108,8 +108,8 @@ command
 curl  -H "Content-Type: application/x-ndjson"  -H "Accept: application/json"   --data-binary  '@REQ_BODY_FILE' \
     --request POST "http://HOSTNAME:PORT/CHOSEN_INDEX/CHOSEN_TYPE/USER_DEFINED_ID?pretty" | less
 ```
-request body file (`REQ_BODY_FILE`):
-```
+request body file (`REQ_BODY_FILE`) may be like:
+```json
 {"name": "Rei", "unit": ["millisecond", "gallon"]}
 ```
 response:
@@ -137,7 +137,8 @@ Note
 
 
 
-#### Update a new document
+#### Update an existing document
+##### Update and erase all previous stored fields
 
 If you run the same command as shown in [Add a new document](#add-a-new-document) again, with the same index / type / ID but different request body data, elasticsearch will internally treat it as an update operation and **discard all the fields stored in the document in your previous API call**.
 
@@ -165,10 +166,44 @@ There are few idfferences if you compare this response with the previous one :
 | `created` |  `false` | `true` |
 
 
-You can also select which fields to update (and unselected fields remain unchanged) in a document, by using `/CHOSEN_INDEX/CHOSEN_TYPE/USER_DEFINED_ID/_update` endpoint
+##### Update with partial document
+
+You can also select which fields to update (and unselected fields remain unchanged) in a document, by calling `/CHOSEN_INDEX/CHOSEN_TYPE/USER_DEFINED_ID/_update`  API endpoint
 
 ```
 curl  -H "Content-Type: application/json"  -H "Accept: application/json;"  --data-binary  '@REQ_BODY_FILE' \
     --request POST "http://HOSTNAME:PORT/CHOSEN_INDEX/CHOSEN_TYPE/USER_DEFINED_ID/_update?pretty"
 ```
+
+Assume a document already includes following fields
+```json
+{
+    "name": "Rin",
+    "last_comment": "awesome work",
+    "num_likes": 345
+}
+```
+And you attempt to add/update some fields in one shot, so the file `REQ_BODY_FILE` contains following data :
+```json
+{"doc": {"donate": {"amount": 50, "currency": "RMB_cent"}, "last_comment": "love it"}}
+```
+After API call to `/CHOSEN_INDEX/CHOSEN_TYPE/USER_DEFINED_ID/_update` , the document will be :
+```json
+{
+    "name": "Rin",
+    "last_comment": "love it",
+    "donate": {"amount": 50, "currency": "RMB_cent"},
+    "num_likes": 345
+}
+```
+
+Note :
+* `doc` field in the request body file (as shown above) specify new fields to add , or existing fields to update
+* In update cases, the pattern of request body should look like `{ DOC_OR_SCRIPT: DETAIL_CONTENT }`
+  * key field `DOC_OR_SCRIPT` can be either of [doc](https://www.elastic.co/guide/en/elasticsearch/reference/5.6/docs-update.html#_updates_with_a_partial_document) or [script](https://www.elastic.co/guide/en/elasticsearch/reference/5.6/docs-update.html#_scripted_updates)
+  * value field `DETAIL_CONTENT` depends on its key field
+  * both `doc` and `script` [cannot be placed in the same clause](https://www.elastic.co/guide/en/elasticsearch/reference/5.6/docs-update.html#_updates_with_a_partial_document), e.g. `{ "doc": DOC_DETAIL, "script": SCRIPT_DETAIL }` is invalid syntax in elasticsearch.
+* To delete fields during update API call, you need to write script `{"script" : {"source": "ctx._source.remove('your_field_name')" }}`
+  * the `ctx` is a map for a document to access its metadata or field data.
+  * `ctx` has several attributes to access: `_source`, `_index`, `_type`, `_id`, `_version`, `_routing`, `_parent` ... etc
 
