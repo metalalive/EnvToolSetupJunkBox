@@ -24,7 +24,7 @@ Note
 * The default `ES_HOME` could be `/usr/share/elasticsearch` in Ubuntu/Linux system. 
 * stand-alone elasticsearch process requires JVM arguments set in environment variable `ES_JAVA_OPTS`.
   * elasticsearch is likely unable to find out [jvm.options](#jvmoptions) if it is NOT located in default path `/etc/elasticsearch/jvm.options`
-  * `<WHATEVER_IN_JVM_OPTIONS_FILE>` mostly includes heap size setup.
+  * `<WHATEVER_IN_JVM_OPTIONS_FILE>` mostly includes heap size setup (e.g. `-Xms<A1>`, `-Xms<A2>`).
 
 
 ### Essential Configuration
@@ -96,7 +96,10 @@ Elasticsearch node will abort on startup if test failure happens on [bootstrap c
 ```
 <USER_OR_GROUP_NAME> -  nofile 65536
 ```
-Then recheck whether the setting takes effect by calling API endpoint `/_nodes/stats/process?filter_path=**.max_file_descriptors&pretty`, the result may be like:
+
+In Ubuntu, you need to relogin, for the setting to take effect.
+
+Then recheck whether the setting is updated, by calling API endpoint `/_nodes/stats/process?filter_path=**.max_file_descriptors&pretty`, the result may be like:
 ```
 {
   "nodes" : {
