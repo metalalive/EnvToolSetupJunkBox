@@ -27,13 +27,11 @@ Note
   * `<WHATEVER_IN_JVM_OPTIONS_FILE>` mostly includes heap size setup.
 
 
-### Configuration
+### Essential Configuration
 
 see [here](https://www.elastic.co/guide/en/elasticsearch/reference/5.6/settings.html#_config_file_location) for detail description
 
-#### Important parameters (for quickstart)
-
-##### elasticsearch.yml
+#### elasticsearch.yml
 ```yml
 # one cluster can have several nodes up and running
 cluster.name: my-application
@@ -56,11 +54,12 @@ bootstrap.memory_lock: <true/false>
 # 
 ```
 
-##### jvm.options
+#### jvm.options
 ```
 # set heap size
 -Xms64m
 -Xmx64m
+# everything else can be default values
 ```
 
 Note:
@@ -86,6 +85,29 @@ Note:
 * You still need to WISELY configure your elasticsearch instance running in a machine which also hosts other services. [(reference #3)](https://stackoverflow.com/questions/37608486/using-mlockall-to-disable-swapping#comment84366798_37608824)
 
 * it is better to set initial JVM heap size (`-Xms<A1>`) equal to its maximum size (`-Xmx<A2>`, in other words, `A1 == A2`), the size can be smaller than default setting, see [here](https://www.elastic.co/guide/en/elasticsearch/reference/5.6/_heap_size_check.html#_heap_size_check) for reason.
+
+
+### Extra System Configuration
+#### File Descriptor
+If you start elasticsearch node as a stand-alone process (not starting as a service), be aware of maximum number of [file descriptors](https://www.elastic.co/guide/en/elasticsearch/reference/5.6/file-descriptors.html#file-descriptors) allowed in the OS account. Because elasticsearch uses lots of file descriptors, **running out of file descriptors could probably lead to data loss**.
+
+Elasticsearch node will abort on startup if test failure happens on [bootstrap check](https://www.elastic.co/guide/en/elasticsearch/reference/5.6/bootstrap-checks.html#bootstrap-checks). Be sure to set up sufficient number of file descriptors on the OS account that run a elasticsearch node, by editing `/etc/security/limits.conf` :
+
+```
+<USER_OR_GROUP_NAME> -  nofile 65536
+```
+Then recheck whether the setting takes effect by calling API endpoint `/_nodes/stats/process?filter_path=**.max_file_descriptors&pretty`, the result may be like:
+```
+{
+  "nodes" : {
+    "xxxxxxxxxx" : {
+      "process" : {
+        "max_file_descriptors" : 65536
+      }
+    }
+  }
+}
+```
 
 
 [Official documentation v5.6](https://www.elastic.co/guide/en/elasticsearch/reference/5.6/index.html)
