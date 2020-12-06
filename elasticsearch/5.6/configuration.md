@@ -15,13 +15,16 @@ service elasticsearch stop
 which can launch several nodes
 
 ```
-/ES_HOME/bin/elasticsearch -Epath.conf=/PATH/TO/CONFIG/FOLDER
+ES_JAVA_OPTS="<WHATEVER_IN_JVM_OPTIONS_FILE>" /ES_HOME/bin/elasticsearch -Epath.conf=/PATH/TO/CONFIG/FOLDER
 ```
 
 Note
 * `path.conf` exists only in old versions (probably before v6.0), removed in later version
 * `/PATH/TO/CONFIG/FOLDER` contains few essential config files `jvm.options`, `log4j2.properties`, `elasticsearch.yml`.
 * The default `ES_HOME` could be `/usr/share/elasticsearch` in Ubuntu/Linux system. 
+* stand-alone elasticsearch process requires JVM arguments set in environment variable `ES_JAVA_OPTS`.
+  * elasticsearch is likely unable to find out `jvm.options` that are NOT located in default path (`/etc/elasticsearch/jvm.options`)
+  * `<WHATEVER_IN_JVM_OPTIONS_FILE>` mostly includes heap size setup.
 
 
 ### Configuration
@@ -30,7 +33,7 @@ see [here](https://www.elastic.co/guide/en/elasticsearch/reference/5.6/settings.
 
 #### Important parameters (for quickstart)
 
-* `elasticsearch.yml`
+##### elasticsearch.yml
 ```yml
 # one cluster can have several nodes up and running
 cluster.name: my-application
@@ -52,6 +55,14 @@ bootstrap.memory_lock: <true/false>
 
 # 
 ```
+
+##### jvm.options
+```
+# set heap size
+-Xms64m
+-Xmx64m
+```
+
 Note:
 * Why it is NOT recommended for a running elasticsearch instance to:
   * swap in memory space allocated by OS
@@ -73,7 +84,8 @@ Note:
   * See more detail from [here](https://www.elastic.co/guide/en/elasticsearch/reference/5.6/setup-configuration-memory.html#mlockall)
   
 * You still need to WISELY configure your elasticsearch instance running in a machine which also hosts other services. [(reference #3)](https://stackoverflow.com/questions/37608486/using-mlockall-to-disable-swapping#comment84366798_37608824)
-* 
+
+* it is better to set initial JVM heap size (`-Xms<A1>`) equal to its maximum size (`-Xmx<A2>`, in other words, `A1 == A2`), the size can be smaller than default setting, see [here](https://www.elastic.co/guide/en/elasticsearch/reference/5.6/_heap_size_check.html#_heap_size_check) for reason.
 
 
 [Official documentation v5.6](https://www.elastic.co/guide/en/elasticsearch/reference/5.6/index.html)
