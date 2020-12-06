@@ -23,7 +23,7 @@ Note
 * `/PATH/TO/CONFIG/FOLDER` contains few essential config files `jvm.options`, `log4j2.properties`, `elasticsearch.yml`.
 * The default `ES_HOME` could be `/usr/share/elasticsearch` in Ubuntu/Linux system. 
 * stand-alone elasticsearch process requires JVM arguments set in environment variable `ES_JAVA_OPTS`.
-  * elasticsearch is likely unable to find out `jvm.options` that are NOT located in default path (`/etc/elasticsearch/jvm.options`)
+  * elasticsearch is likely unable to find out [jvm.options](#jvmoptions) if it is NOT located in default path `/etc/elasticsearch/jvm.options`
   * `<WHATEVER_IN_JVM_OPTIONS_FILE>` mostly includes heap size setup.
 
 
