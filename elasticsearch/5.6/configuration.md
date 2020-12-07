@@ -130,7 +130,7 @@ Note:
    By setting `xpack.watcher.enabled`, the [watcher](https://www.elastic.co/guide/en/elasticsearch/reference/5.6/notification-settings.html) can be temporarily disabled in development mode. Note the error above doesn't show up  in elasticsearch node running as a service.
    
 * Also x-pack will increase JVM heap usage, make sure there's enough memory space in JVM heap, it is better off having 64MB in initial heap space.
-* Default password is `changeme` for all built-in accounts : `elastic`, `kibana`, `logstash_system`. For security concern, you  should reset the passwords for all these accounts as soon as x-pack is installed, then set false to the option `accept_default_password`.
+* Default password is `changeme` for all built-in accounts : `elastic`, `kibana`, `logstash_system`. For security concern, you  should [reset the passwords](./access_pattern_cheatsheet.md#change-password) for all these accounts as soon as x-pack is installed, then set false to the option `accept_default_password`.
 * [Follow the steps](https://discuss.elastic.co/t/dec-22nd-2017-en-x-pack-i-lost-forgot-the-elastic-user-password-am-i-locked-out-forever/110075) while you forgot password of the built-in account (TODO)
 
 
