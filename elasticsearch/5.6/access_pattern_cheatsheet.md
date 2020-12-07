@@ -250,3 +250,27 @@ Note:
 
 
 
+### X-pack
+You may need to add a few options ONLY if x-pack plugin is installed
+
+#### Authentication
+After x-pack installation, Authentication is **required** by default for most (all?) of API calls, be sure to add valid username & password in each API request, Otherwise you would receive `401` error response.
+```
+curl  -H "Content-Type: application/json"  -H "Accept: application/json;"  --request <WHATEVER_METHOD> \
+    "http://<USERNAME>:<PASSWORD>@<HOSTNAME>:<PORT>/<WHATEVER_API_ENDPOINT>" 
+```
+
+
+#### Account Management
+##### Change password
+```
+curl  -H "Content-Type: application/json"  -H "Accept: application/json;" -d '{"password": "<YOUR_NEW_PASSWD>"}' \
+   --request PUT  "http://<USERNAME>:<PASSWORD>@<HOSTNAME>:<PORT>/_xpack/security/user/<USERNAME>/_password?pretty" 
+```
+Note:
+* Each user account can only change his/her own password, unless `USERNAME` is superuser account
+
+
+### Query, DSL
+too complex ... might require another markdown file to describe
+
