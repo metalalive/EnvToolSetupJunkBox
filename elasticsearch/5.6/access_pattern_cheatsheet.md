@@ -88,8 +88,11 @@ Response would be like :
 
 * Delete an existing index
 ```
-curl  -H "Accept: application/json;"  --request DELETE "http://HOSTNAME:PORT/NEW_INDEX_NAME?pretty"
+curl  -H "Accept: application/json;"  --request DELETE "http://HOSTNAME:PORT/USELESS_INDEX_NAME?pretty"
 ```
+Note:
+* `USELESS_INDEX_NAME` may contain wildcard character, e.g. `serverlog-2020-*`
+
 Response would be like :
 ```
 {
@@ -216,7 +219,18 @@ By simply send `DELETE` request with the document ID you attempt to delete, see 
 curl  -H "Content-Type: application/json"  -H "Accept: application/json;"  --data-binary  '@REQ_BODY_FILE' \
     --request DELETE "http://HOSTNAME:PORT/CHOSEN_INDEX/CHOSEN_TYPE/USER_DEFINED_ID?pretty"
 ```
-
+or you can selectively delete several documents by providing query :
+```
+curl -s -H "Content-Type: application/x-ndjson" -H "Accept: application/json" --data-binary '@es_search_query.json'  --request POST "http://<HOSTNAME>:<PORT>/<CHOSEN_INDEX>/<CHOSEN_TYPE>/_delete_by_query?pretty"
+```
+where `es_search_query.json` includes search conditions, for example, to delete all documents under an index, you have:
+```json
+{
+    "query": {
+        "match_all": {}
+    }
+}
+```
 
 ### Batch processing
 
@@ -262,6 +276,49 @@ curl  -H "Content-Type: application/json"  -H "Accept: application/json;"  --req
 
 
 #### Account Management
+
+X-pack plugin is required for following API endpoints, also make sure user has the privilege to perform these operations
+
+##### Create User
+```
+curl -s -H "Content-Type: application/x-ndjson" -H "Accept: application/json" --data-binary '@es_xpack_edit_user.json' \
+    --request POST  "http://<USERNAME>:<PASSWORD>@<HOSTNAME>:<PORT>/_xpack/security/user/<NEW_USER_NAME>?pretty"
+```
+where `es_xpack_edit_user.json` may be like:
+```json
+{
+    "password": "<INITIAL_PASSWORD>",
+    "roles" : ["<ASSIGNED_ROLE_1>",  "<ASSIGNED_ROLE_2>", "<ASSIGNED_ROLE_3>" ],
+    "full_name" : "<WHATEVER_NAME>",
+    "email" : null,
+    "enabled": true
+}
+```
+##### Edit User
+
+* API endpoint is the same as above `/_xpack/security/user/<EXISTING_USER_NAME>`, but request method is `PUT`
+* `password` field can be omitted
+* It is not partial update, the fields specified in the update API call will overwrite whole content of the fields stored in elasticsearch accordingly. For example, if you attempt to only append new roles to the list of `roles` field , you will need to fetch those roles already assigned to the user.
+* Built-in users in elasticsearch cannot be updated by anyone, otherwise you will get error response (HTTP status 400)
+
+##### View status of a logged-in user
+```
+curl -s -H "Accept: application/json" --request GET \
+    "http://<USERNAME>:<PASSWORD>@<HOSTNAME>:<PORT>/_xpack/security/_authenticate?pretty"
+```
+expected response may look like:
+```json
+{
+  "username" : "<YOUR_USERNAME>",
+  "roles" : ["<ASSIGNED_ROLE_1>",  "<ASSIGNED_ROLE_2>", "<ASSIGNED_ROLE_3>" ],
+  "full_name" : "<WHATEVER_NAME>",
+  "email" : null,
+  "metadata" : { },
+  "enabled" : true
+}
+```
+Note the enabled field can be false, which means the user account is deactivated.
+
 ##### Change password
 ```
 curl  -H "Content-Type: application/json"  -H "Accept: application/json;" -d '{"password": "<YOUR_NEW_PASSWD>"}' \
@@ -269,6 +326,30 @@ curl  -H "Content-Type: application/json"  -H "Accept: application/json;" -d '{"
 ```
 Note:
 * Each user account can only change his/her own password, unless `USERNAME` is superuser account
+
+
+#### Role Management
+
+##### Create a role
+```
+curl -s -H "Content-Type: application/x-ndjson" -H "Accept: application/json" --data-binary '@es_xpack_edit_role.json' \
+    --request POST  "http://<USERNAME>:<PASSWORD>@<HOSTNAME>:<PORT>/_xpack/security/role/<NEW_ROLE_NAME>?pretty"
+```
+where `es_xpack_edit_role.json` may look like :
+```
+{
+    "cluster":["<VALID_CLUSTER_PRIV_1>", "<VALID_CLUSTER_PRIV_2>"],
+    "indices":[
+        {
+            "names": ["<INDEX_PATTERN_1>", "<INDEX_PATTERN_2>"],
+            "privileges": ["<VALID_INDICES_PRIV_1>", "<VALID_INDICES_PRIV_2>"]
+        }
+    ],
+    "run_as": []
+}
+```
+##### Update a role
+
 
 
 ### Query, DSL
