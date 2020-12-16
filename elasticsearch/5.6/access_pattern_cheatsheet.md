@@ -294,14 +294,18 @@ where `es_xpack_edit_user.json` may be like:
     "enabled": true
 }
 ```
+Note:
+* `<ASSIGNED_ROLE_x>` is valid name of an existing role in your elasticsearch, see [how to view/edit a role](#role-management) for detail.
+
 ##### Edit User
 
-* API endpoint is the same as above `/_xpack/security/user/<EXISTING_USER_NAME>`, but request method is `PUT`
-* `password` field can be omitted
-* It is not partial update, the fields specified in the update API call will overwrite whole content of the fields stored in elasticsearch accordingly. For example, if you attempt to only append new roles to the list of `roles` field , you will need to fetch those roles already assigned to the user.
-* Built-in users in elasticsearch cannot be updated by anyone, otherwise you will get error response (HTTP status 400)
+API endpoint is the same as above `/_xpack/security/user/<EXISTING_USER_NAME>`, but request method is `PUT`, also note that :
+* `password` field can be omitted in the request body
+* It is NOT partial update, the fields specified in the update API call will overwrite whole content of the fields stored in elasticsearch accordingly. For example, if you attempt to only append new roles to the list of `roles` field , you will need to fetch those roles already assigned to the user.
+* Built-in users in elasticsearch can NOT be updated by anyone, otherwise you will get error response (validation failure, HTTP status 400)
 
-##### View status of a logged-in user
+##### View status of user(s)
+* For any authenticated user viewing him/herself:
 ```
 curl -s -H "Accept: application/json" --request GET \
     "http://<USERNAME>:<PASSWORD>@<HOSTNAME>:<PORT>/_xpack/security/_authenticate?pretty"
@@ -309,7 +313,7 @@ curl -s -H "Accept: application/json" --request GET \
 expected response may look like:
 ```json
 {
-  "username" : "<YOUR_USERNAME>",
+  "username" : "<USERNAME>",
   "roles" : ["<ASSIGNED_ROLE_1>",  "<ASSIGNED_ROLE_2>", "<ASSIGNED_ROLE_3>" ],
   "full_name" : "<WHATEVER_NAME>",
   "email" : null,
@@ -319,13 +323,20 @@ expected response may look like:
 ```
 Note the enabled field can be false, which means the user account is deactivated.
 
+* For users who have permission to view all other users :
+```
+curl -s -H "Accept: application/json" --request GET \
+    "http://<USERNAME>:<PASSWORD>@<HOSTNAME>:<PORT>/_xpack/security/user/?pretty"
+```
+Then elasticsearch responds with list of exising users, the structure of each item is as shown above.
+
 ##### Change password
 ```
 curl  -H "Content-Type: application/json"  -H "Accept: application/json;" -d '{"password": "<YOUR_NEW_PASSWD>"}' \
    --request PUT  "http://<USERNAME>:<PASSWORD>@<HOSTNAME>:<PORT>/_xpack/security/user/<USERNAME>/_password?pretty" 
 ```
 Note:
-* Each user account can only change his/her own password, unless `USERNAME` is superuser account
+* Each user account can only change his/her own password, unless `USERNAME` has superuser role.
 
 
 #### Role Management
@@ -348,10 +359,36 @@ where `es_xpack_edit_role.json` may look like :
     "run_as": []
 }
 ```
-##### Update a role
+Note:
+* `<VALID_CLUSTER_PRIV_x>` is valid name of any low-level [cluster privilege](https://www.elastic.co/guide/en/elasticsearch/reference/6.3/security-privileges.html#privileges-list-cluster) defined in elasticsearch, these privileges will take effect in the entire cluster.
+* `<VALID_INDICES_PRIV_x>` is valid name of any low-level [indices privilege](https://www.elastic.co/guide/en/elasticsearch/reference/6.3/security-privileges.html#privileges-list-indices) defined in elasticsearch, these privileges will affect access permissions to the index patterns in the list : `<INDEX_PATTERN_1>`, `<INDEX_PATTERN_2>` .....
+* The list of the valid privileges (as mentioned above) may change between different elasticsearch versions, unfortunately, the privileges are likely NOT documented in old versions (before v6.3), You might need trial and error ....
 
+##### Update a role
+API endpoint is the same as above `/_xpack/security/role/<EXISTING_ROLE_NAME>`, but request method is `PUT`, also note that :
+* `password` field can be omitted in the request body
+* It is NOT partial update, the fields specified in the update API call will overwrite whole content of the fields stored in elasticsearch accordingly.
+* Built-in roles in elasticsearch can NOT be updated by anyone, otherwise you will get error response (validation failure, HTTP status 400)
+
+##### View status of role(s)
+For users who have permission to view all existing roles :
+```
+curl -s -H "Accept: application/json" --request GET \
+    "http://<USERNAME>:<PASSWORD>@<HOSTNAME>:<PORT>/_xpack/security/role/?pretty"
+```
 
 
 ### Query, DSL
 too complex ... might require another markdown file to describe
+
+### Troubleshooting
+#### out-of-memory error (JVM)
+##### Symptom
+health flag turns RED, a running node goes down.
+##### Possible rootcuase
+certain number of documents indexed in elasticsearch, each of which has different key set, that cuase heap usage of index mapping grows.
+##### Solution
+For key-value pair in a document, [avoid key generation depending on different use cases](https://www.elastic.co/blog/found-crash-elasticsearch#mapping-explosion), make document structure consistent.
+
+
 
