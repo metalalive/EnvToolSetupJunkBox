@@ -362,7 +362,8 @@ where `es_xpack_edit_role.json` may look like :
 Note:
 * `<VALID_CLUSTER_PRIV_x>` is valid name of any low-level [cluster privilege](https://www.elastic.co/guide/en/elasticsearch/reference/6.3/security-privileges.html#privileges-list-cluster) defined in elasticsearch, these privileges will take effect in the entire cluster.
 * `<VALID_INDICES_PRIV_x>` is valid name of any low-level [indices privilege](https://www.elastic.co/guide/en/elasticsearch/reference/6.3/security-privileges.html#privileges-list-indices) defined in elasticsearch, these privileges will affect access permissions to the index patterns in the list : `<INDEX_PATTERN_1>`, `<INDEX_PATTERN_2>` .....
-* The list of the valid privileges (as mentioned above) may change between different elasticsearch versions, unfortunately, the privileges are likely NOT documented in old versions (before v6.3), You might need trial and error ....
+* The list of the valid privileges (as mentioned above) may change between different elasticsearch versions, unfortunately, the privileges are probably NOT documented for old versions (before v6.3), You might need trial and error ....
+* `<INDEX_PATTERN_x>` may contain wildcard character `*` to cover variation of index string patterns, e.g. `log-*-appserver` 
 
 ##### Update a role
 API endpoint is the same as above `/_xpack/security/role/<EXISTING_ROLE_NAME>`, but request method is `PUT`, also note that :
