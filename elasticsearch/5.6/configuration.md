@@ -135,9 +135,23 @@ Note:
     * **the built-in users are fixed and CANNOT be changed by any other user** (even those who have superuser role), which makes them inconvenient to use
     * the 2 built-in users `logstash_system` and `kibana` still lack some [cluster privileges / indices privileges](https://www.elastic.co/guide/en/elasticsearch/reference/6.8/security-privileges.html) to make logstash / kibana work properly. 
   * therefore you are better off :
-    * creating another role with all required cluster/indices privileges
-      * for logstash, you should at least provide ``
-    * creating another new user for logstash and kibana, then assigning the new role to the new user.
+    * [creating another role](./access_pattern_cheatsheet.md#create-a-role) with all required cluster/indices privileges
+      * for logstash, you should at least provide (example of request body is shwon below) :
+        * `manage_index_templates` in the cluster privilege list
+        * `create_index` and `index` in every item of the indices privilege list
+          ```json
+          {
+             "cluster" : ["manage_index_templates"],
+             "indices" : [
+                 {"names" : ["log-*", "logstash-*"], "privileges" : ["create_index", "index"]  },
+                 {"names" : ["internal-*", "other-index-*"], "privileges" : ["create_index", "index"]  }
+             ]
+          }
+          ```
+      * for kibana, you should at least provide :
+        * rururur
+        * ewoijfowiejf
+    * [creating another new user](./access_pattern_cheatsheet.md#create-user), then assigning the new role to the new user.
 * you can [change the passwords](./access_pattern_cheatsheet.md#change-password) of an existing user account for security concern,
 * Before production, remember to set false to the option `accept_default_password`.
 * [Follow the steps](https://discuss.elastic.co/t/dec-22nd-2017-en-x-pack-i-lost-forgot-the-elastic-user-password-am-i-locked-out-forever/110075) while you forgot password of the built-in account (TODO)
