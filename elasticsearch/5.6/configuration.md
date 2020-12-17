@@ -136,10 +136,13 @@ Note:
     * the 2 built-in users `logstash_system` and `kibana` still lack some [cluster privileges / indices privileges](https://www.elastic.co/guide/en/elasticsearch/reference/6.8/security-privileges.html) to make logstash / kibana work properly. 
   * therefore you are better off :
     * [creating another role](./access_pattern_cheatsheet.md#create-a-role) with all required cluster/indices privileges
-      * for logstash, you should at least provide (example of request body is shwon below) :
+      * for logstash, you should **at least** provide :
         * `manage_index_templates` in the cluster privilege list
-        * `create_index` and `index` in every item of the indices privilege list
+        * add index pattern(s) to the indices access list, e.g. you may want logstash to flush log data with index name like `logstash-*`, `log-*`, or whatever patterns you attempt to use for indexing.
+        * add indice privileges `create_index` and `index`, for every index pattern you add to the indices access list
+        * Here is an example of the request body:
           ```json
+          # POST /_xpack/security/role/logstash_role
           {
              "cluster" : ["manage_index_templates"],
              "indices" : [
@@ -148,10 +151,23 @@ Note:
              ]
           }
           ```
-      * for kibana, you should at least provide :
-        * rururur
-        * ewoijfowiejf
-    * [creating another new user](./access_pattern_cheatsheet.md#create-user), then assigning the new role to the new user.
+      * for kibana, you should **at least** provide :
+        * add index pattern(s) to the indices access list, as shwon in the example above
+        * add indice privileges `read`, for every index pattern you add to the indices access list
+        * Here is an example of the request body:
+        ```json
+        # POST /_xpack/security/role/kibana_role
+        {
+            "cluster" : [],
+            "indices" : [
+                {"names":["log-*", "logstash-*"], "privileges":["read"] },
+                {"names":["internal-*", "other-index-*"], "privileges" : ["read"]}
+            ]
+        }
+        ```
+    * [creating another new user](./access_pattern_cheatsheet.md#create-user) and assigning the new role to the new user.
+      * for logstash, you simply add the role `logstash_role` to your new user
+      * for kibana, you add the built-in role `kibana_system` and the role you created `kibana_role` to your new user. Note that the built-in role `kibana_system` contains cluster privilege `monitor` which is required by kibana, so it's good to reuse it.
 * you can [change the passwords](./access_pattern_cheatsheet.md#change-password) of an existing user account for security concern,
 * Before production, remember to set false to the option `accept_default_password`.
 * [Follow the steps](https://discuss.elastic.co/t/dec-22nd-2017-en-x-pack-i-lost-forgot-the-elastic-user-password-am-i-locked-out-forever/110075) while you forgot password of the built-in account (TODO)
