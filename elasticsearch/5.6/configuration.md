@@ -83,8 +83,22 @@ Note:
   * See more detail from [here](https://www.elastic.co/guide/en/elasticsearch/reference/5.6/setup-configuration-memory.html#mlockall)
   
 * You still need to WISELY configure your elasticsearch instance running in a machine which also hosts other services. [(reference #3)](https://stackoverflow.com/questions/37608486/using-mlockall-to-disable-swapping#comment84366798_37608824)
-
 * it is better to set initial JVM heap size (`-Xms<A1>`) equal to its maximum size (`-Xmx<A2>`, in other words, `A1 == A2`), the size can be smaller than default setting, see [here](https://www.elastic.co/guide/en/elasticsearch/reference/5.6/_heap_size_check.html#_heap_size_check) for reason.
+* Elasticsearch is unstable [if heap space is too small](https://www.elastic.co/blog/a-heap-of-trouble):
+  * because it cause more garbage collections (GC), each garbage collection pauses all working threads inside elasticsearch
+  * for some reason, each garbage collection will take longer to complete
+  * As soon as GC takes more than 1 second, all working threads have halted for more than 1 second, elasticsearch throws a Java exception named `OutOfMemoryError`, then the node goes down.
+  * such problem exists, if your elasticsearch log file (default path `/var/log/elasticsearch`) contains many messages about GC like this (and logging time is close to each other) :
+   ```
+   [DATE_TIME][INFO][o.e.m.j.JvmGcMonitorService] [NODE_NAME] [gc][xxx] overhead, spent [322ms] collecting in the last [1s]
+   [DATE_TIME][INFO][o.e.m.j.JvmGcMonitorService] [NODE_NAME] [gc][xxx] overhead, spent [459ms] collecting in the last [1s]
+   [DATE_TIME][INFO][o.e.m.j.JvmGcMonitorService] [NODE_NAME] [gc][xxx] overhead, spent [479ms] collecting in the last [1s]
+   [DATE_TIME][INFO][o.e.m.j.JvmGcMonitorService] [NODE_NAME] [gc][xxx] overhead, spent [352ms] collecting in the last [1s]
+   [DATE_TIME][INFO][o.e.m.j.JvmGcMonitorService] [NODE_NAME] [gc][xxx] overhead, spent [306ms] collecting in the last [1s]
+   [DATE_TIME][INFO][o.e.m.j.JvmGcMonitorService] [NODE_NAME] [gc][xxx] overhead, spent [527ms] collecting in the last [1s]
+   [DATE_TIME][INFO][o.e.m.j.JvmGcMonitorService] [NODE_NAME] [gc][xxx] overhead, spent [283ms] collecting in the last [1s]
+   [DATE_TIME][INFO][o.e.m.j.JvmGcMonitorService] [NODE_NAME] [gc][xxx] overhead, spent [328ms] collecting in the last [1s]
+   ```
 
 
 ### Extra System Configuration
@@ -129,7 +143,7 @@ Note:
    ```
    By setting `xpack.watcher.enabled`, the [watcher](https://www.elastic.co/guide/en/elasticsearch/reference/5.6/notification-settings.html) can be temporarily disabled in development mode. Note the error above doesn't show up  in elasticsearch node running as a service.
    
-* Also x-pack will increase JVM heap usage, make sure there's enough memory space in JVM heap, it is better off having 64MB in initial heap space.
+* Also x-pack will increase JVM heap usage, make sure there's enough memory space in JVM heap, it is better off having **at least** 64MB in initial heap space.
 * Default password is `changeme` for all built-in user accounts e.g. `elastic`, `kibana`, `logstash_system`.
   * You can use any of these built-in users, the downsides are:
     * **the built-in users are fixed and CANNOT be changed by any other user** (even those who have superuser role), which makes them inconvenient to use
@@ -166,8 +180,8 @@ Note:
         }
         ```
     * [creating another new user](./access_pattern_cheatsheet.md#create-user) and assigning the new role to the new user.
-      * for logstash, you simply add the role `logstash_role` to your new user
-      * for kibana, you add the built-in role `kibana_system` and the role you created `kibana_role` to your new user. Note that the built-in role `kibana_system` contains cluster privilege `monitor` which is required by kibana, so it's good to reuse it.
+      * for logstash, you simply assign `logstash_role` to the role list of your new user
+      * for kibana, you assign the built-in role `kibana_system` and the role you created `kibana_role` to the role list of your new user. Note that the built-in role `kibana_system` contains cluster privilege `monitor` which is required by kibana, so it's good to reuse it.
 * you can [change the passwords](./access_pattern_cheatsheet.md#change-password) of an existing user account for security concern,
 * Before production, remember to set false to the option `accept_default_password`.
 * [Follow the steps](https://discuss.elastic.co/t/dec-22nd-2017-en-x-pack-i-lost-forgot-the-elastic-user-password-am-i-locked-out-forever/110075) while you forgot password of the built-in account (TODO)
