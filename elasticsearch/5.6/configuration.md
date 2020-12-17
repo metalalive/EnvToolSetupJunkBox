@@ -57,8 +57,8 @@ bootstrap.memory_lock: <true/false>
 #### jvm.options
 ```
 # set heap size
--Xms64m
--Xmx64m
+-Xms128m
+-Xmx128m
 # everything else can be default values
 ```
 
@@ -84,7 +84,7 @@ Note:
   
 * You still need to WISELY configure your elasticsearch instance running in a machine which also hosts other services. [(reference #3)](https://stackoverflow.com/questions/37608486/using-mlockall-to-disable-swapping#comment84366798_37608824)
 * it is better to set initial JVM heap size (`-Xms<A1>`) equal to its maximum size (`-Xmx<A2>`, in other words, `A1 == A2`), the size can be smaller than default setting, see [here](https://www.elastic.co/guide/en/elasticsearch/reference/5.6/_heap_size_check.html#_heap_size_check) for reason.
-* Elasticsearch is unstable [if heap space is too small](https://www.elastic.co/blog/a-heap-of-trouble):
+* Elasticsearch is unstable [if heap space is too small](https://www.elastic.co/blog/a-heap-of-trouble), **you need to provide minimal required heap space that makes elasticsearch stable** (e.g. 128 MB should be safe):
   * because it cause more garbage collections (GC), each garbage collection pauses all working threads inside elasticsearch
   * for some reason, each garbage collection will take longer to complete
   * As soon as GC takes more than 1 second, all working threads have halted for more than 1 second, elasticsearch throws a Java exception named `OutOfMemoryError`, then the node goes down.
@@ -143,7 +143,7 @@ Note:
    ```
    By setting `xpack.watcher.enabled`, the [watcher](https://www.elastic.co/guide/en/elasticsearch/reference/5.6/notification-settings.html) can be temporarily disabled in development mode. Note the error above doesn't show up  in elasticsearch node running as a service.
    
-* Also x-pack will increase JVM heap usage, make sure there's enough memory space in JVM heap, it is better off having **at least** 64MB in initial heap space.
+* Also x-pack will increase JVM heap usage, make sure there's enough memory space in JVM heap, it is better off having **at least** 128MB in initial heap space.
 * Default password is `changeme` for all built-in user accounts e.g. `elastic`, `kibana`, `logstash_system`.
   * You can use any of these built-in users, the downsides are:
     * **the built-in users are fixed and CANNOT be changed by any other user** (even those who have superuser role), which makes them inconvenient to use
