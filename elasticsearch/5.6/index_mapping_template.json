@@ -1,0 +1,184 @@
+// Note: many of json library doesn't support comment, you need to either remove all these comments below,
+// or use any library that supports comment.
+// If you use curl, it is ok to put following serialized json string to http request body .
+{
+    "template": "log-*", // index pattern that applies this template, e.g. log-2020-12 , log-2021-01
+    "version": 50002,
+    "settings": {
+        "index.refresh_interval" : "10s"
+    },
+    "mappings" : {
+        "_default_" : {
+            "properties" : {
+              "@timestamp" : {
+                "type" : "date"
+              },
+              "@version" : {
+                "type" : "text",
+                "fields" : {
+                  "keyword" : {
+                    "type" : "keyword",
+                    "ignore_above" : 256
+                  }
+                }
+              },
+              "asctime" : { // in my case, it is ISO8601 format
+                "type" : "date"
+              },
+              "code" : {
+                "properties" : {
+                  "filepath" : {
+                    "type" : "text",
+                    "fields" : {
+                      "keyword" : {
+                        "type" : "keyword",
+                        "ignore_above" : 256
+                      }
+                    }
+                  },
+                  "lineno" : {
+                    "type" : "long"
+                  }
+                }
+              },
+              "host" : {
+                "type" : "text",
+                "fields" : {
+                  "keyword" : {
+                    "type" : "keyword",
+                    "ignore_above" : 256
+                  }
+                }
+              },
+              "level" : {
+                "type" : "text",
+                "fields" : {
+                  "keyword" : {
+                    "type" : "keyword",
+                    "ignore_above" : 16
+                  }
+                }
+              },
+              "message" : {
+                "type" : "text",
+                "fields" : {
+                  "keyword" : {
+                    "type" : "keyword",
+                    "ignore_above" : 256
+                  }
+                }
+              },
+              "msg_kv_pairs" : {
+                // if your document contains list of nested fields, you should set this type before the first indexing operation
+                //, otherwise Elasticsearch will `guess` what type of each field there should be and create default index mapping.
+                // the default index mapping flatten `a list of nested fields` into `several simple list of fields, renamed with
+                // its original hierarchy
+                "type":"nested", 
+                "properties" : {
+                  "key" : {
+                    "type" : "text",
+                    "fields" : {
+                      "keyword" : {
+                        "type" : "keyword",
+                        "ignore_above" : 256
+                      }
+                    }
+                  },
+                  "value" : {
+                    "type" : "text",
+                    "fields" : {
+                      "keyword" : {
+                        "type" : "keyword",
+                        "ignore_above" : 256
+                      }
+                    }
+                  }
+                }
+              },
+              "port" : {
+                "type" : "long"
+              },
+              "process" : {
+                "type" : "text",
+                "fields" : {
+                  "keyword" : {
+                    "type" : "keyword",
+                    "ignore_above" : 256
+                  }
+                }
+              },
+              "request" : {
+                "properties" : {
+                  "ip" : {
+                    "type" : "text",
+                    "fields" : {
+                      "keyword" : {
+                        "type" : "keyword",
+                        "ignore_above" : 256
+                      }
+                    }
+                  },
+                  "mthd" : {
+                    "type" : "text",
+                    "fields" : {
+                      "keyword" : {
+                        "type" : "keyword",
+                        "ignore_above" : 256
+                      }
+                    }
+                  },
+                  "uri" : {
+                    "properties" : {
+                      "params" : {
+                        "type" : "text",
+                        "fields" : {
+                          "keyword" : {
+                            "type" : "keyword",
+                            "ignore_above" : 256
+                          }
+                        }
+                      },
+                      "path" : {
+                        "type" : "text",
+                        "fields" : {
+                          "keyword" : {
+                            "type" : "keyword",
+                            "ignore_above" : 256
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              "serial_json_msg" : { // keep it in case Logstash fails to parse input message
+                "type" : "text",
+                "fields" : {
+                  "keyword" : {
+                    "type" : "keyword",
+                    "ignore_above" : 256
+                  }
+                }
+              },
+              "tags" : {
+                "type" : "text",
+                "fields" : {
+                  "keyword" : {
+                    "type" : "keyword",
+                    "ignore_above" : 256
+                  }
+                }
+              },
+              "thread" : {
+                "type" : "text",
+                "fields" : {
+                  "keyword" : {
+                    "type" : "keyword",
+                    "ignore_above" : 256
+                  }
+                }
+              }
+            } // end of document property clause
+        } // end of _default_ clause
+    } // end of mappings clause
+}
