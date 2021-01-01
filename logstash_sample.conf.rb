@@ -1,40 +1,73 @@
 ## logstash configuration options
-
-input {
-    stdin {
+input { 
+    tcp {
+        port => 5959
         codec => "line"
-    } 
-    ## tcp {
-    ##     port => 5959
-    ##     codec => "json"
-    ##     ssl_enable => false
-    ## } 
-} ## end of input phase
+        ssl_enable => false
+    }
+} # end of input phase
 
 
 filter {
+    fingerprint {
+        source => "message"
+        target => "[@metadata][fingerprint]"
+        # for C10K problem, maximum number of the log messages per day are
+        # 3600 * 24 * 10000 * k, where k is number of log messages per frontend request
+        # ,if k = 100, the number above is around 2^(36.3303...), so generated value for
+        # the fingerprints unlikely collide (in just one day)
+        method => "SHA1"
+        key => "xxx"
+    }
+
     grok {
         break_on_match => true
         named_captures_only => true
+        patterns_dir => ['/etc/logstash/custom_pattern']
         match => {
             "message" => [
-                ## comment, for development
-                "%{IP:[request][ip]} %{WORD:[request][mthd]} %{URIPATH:[request][uri][path]}(?:%{URIPARAM:[request][uri][params]})? %{HOSTNAME:[code][module_path]} %{INT:[code][lineno]} %{LOGLEVEL:level} %{GREEDYDATA:raw_key_value_pairs}",
+                ## comment, for development use
+                ## URI parameters, process ID, and thread ID are optional
+                ## ISO8601 timestamp format --> YYYY-MM-DD hh:mm:ss,uuu
+                "(%{IP:[request][ip]} %{WORD:[request][mthd]} %{URIPATH:[request][uri][path]}(?:%{URIPARAM:[request][uri][params]})? )?%{TIMESTAMP_ISO8601:asctime} %{LOGLEVEL:level} %{INT:process} %{INT:thread} %{PATH:[code][filepath]} %{INT:[code][lineno]} %{GREEDYDATA:serial_json_msg}",
                 ## comment, for logging user activity
                 "%{IP:[request][ip]} %{WORD:[reqeust][mthd]} %{URIPATH:[request][uri][path]} %{INT:[profile][id]} %{WORD:[profile][firstname]} %{WORD:[affected][model_cls]}"
             ]
         }
+    } ## end of grok plugin
+
+    #date {
+    #    ####match => ["[@metadata][timestamp]", "MMM dd yyyy HH:mm:ss", "ISO8601"]
+    #    match => ["[@metadata][timestamp]", "yyyy-MM-dd-HH-mm-ss"]
+    #    timezone => "Asia/Taipei"
+    #}
+
+    grok {
+        # extract year and month from input event time (the app server)
+        # for internal use, all fields in @metadata are not part of event at output time.
+        match => {
+            "asctime" => [
+                "%{YEAR:[@metadata][evt_date][year]}-%{MONTHNUM:[@metadata][evt_date][month]}-%{GREEDYDATA:[@metadata][evt_date][useless]}"
+            ]
+        }
+    }
+
+    mutate {
+        remove_field => ["[@metadata][evt_date][useless]"]
     }
 
     ## filters can be chained like this
-    if [raw_key_value_pairs] {
-        kv {
-            source => "raw_key_value_pairs"
-            target => "dict_data"
+    if [serial_json_msg] {
+        #kv 
+        json {
+            source => "serial_json_msg"
+            target => "msg_kv_pairs"
+            #value_split => "="
+            #field_split => "&"
         }
-        if "_grokparsefailure" not in [tags] {
+        if "_jsonparsefailure" not in [tags] and [msg_kv_pairs] {
             mutate {
-                remove_field => ["raw_key_value_pairs"]
+                remove_field => ["serial_json_msg"]
             }
         }
     }
@@ -48,52 +81,27 @@ filter {
 
 
 output {
-    ## default, for quick test
-    stdout { codec => rubydebug }
+    elasticsearch {
+        hosts => ["YOUR_HOST_NAME:PORT"]
+        user => "LOGIN_USERNAME"
+        password => "LOGIN_PASSWORD"
+        action => "index"
+        # log indexes are separate by months
+        # NOTE: DO NOT read event time by using syntax %{+yyyy.MM.dd.HH.mm}
+        # because I have not figured out how to change the timezone (it might be impossible to change that) 
+        #### index => "log-%{+yyyy.MM.dd.HH.mm}"
+        index => "log-%{[@metadata][evt_date][year]}-%{[@metadata][evt_date][month]}"
+        document_type => "app_server" # deprecated in v 7.x
+        document_id   => "%{+dd}%{[@metadata][fingerprint]}"
+    }
+} # end of output phase
 
-    ## ## eventually parsed message will go here, for storage
-    ## elasticsearch {
-    ##     hosts => ["localhost:9200"]
-    ##     ## better to dynamically create index (e.g. by date, by application label)
-    ##     index => "testlog"
-    ##     sniffing => true
-    ## }
-} ## end of output phase
 
+# [reference]
+# https://www.elastic.co/guide/en/logstash/current/event-dependent-configuration.html#logstash-config-field-references
+# https://github.com/logstash-plugins/logstash-patterns-core/blob/master/patterns/grok-patterns
+# https://www.elastic.co/guide/en/logstash/current/event-dependent-configuration.html#event-dependent-configuration
+# https://www.elastic.co/guide/en/logstash/current/plugins-filters-date.html#plugins-filters-date
+#
 
-## [example input data]
-## 12.34.109.2 GET /usrmgt/activity_log?abc=ty427yt248&ordering=usr_cnt softdelete.views 188 WARNING cicd=0008  pid= itu  haja = jacker  pid = 093
-##
-## [output]
-## 
-## {
-##        "request" => {
-##         "mthd" => "GET",
-##          "uri" => {
-##             "params" => "?abc=ty427yt248&ordering=usr_cnt",
-##               "path" => "/usrmgt/activity_log"
-##         },
-##           "ip" => "12.34.109.2"
-##     },
-##     "@timestamp" => 2020-11-30T16:11:54.915Z,
-##           "code" => {
-##         "module_path" => "softdelete.views",
-##              "lineno" => "188"
-##     },
-##          "level" => "WARNING",
-##      "kv_target" => {
-##         "haja" => "jacker",
-##         "cicd" => "0008",
-##          "pid" => [
-##             [0] "itu",
-##             [1] "093"
-##         ]
-##     },
-##       "@version" => "1",
-##           "host" => "0.0.0.0"
-## }
-##
-## [reference]
-## https://www.elastic.co/guide/en/logstash/current/event-dependent-configuration.html#logstash-config-field-references
-## https://github.com/logstash-plugins/logstash-patterns-core/blob/master/patterns/grok-patterns
-
+        
