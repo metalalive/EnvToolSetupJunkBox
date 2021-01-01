@@ -22,9 +22,6 @@
                   }
                 }
               },
-              "asctime" : { // in my case, it is ISO8601 format
-                "type" : "date"
-              },
               "code" : {
                 "properties" : {
                   "filepath" : {
