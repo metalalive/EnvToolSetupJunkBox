@@ -149,7 +149,7 @@ Note:
     * **the built-in users are fixed and CANNOT be changed by any other user** (even those who have superuser role), which makes them inconvenient to use
     * the 2 built-in users `logstash_system` and `kibana` still lack some [cluster privileges / indices privileges](https://www.elastic.co/guide/en/elasticsearch/reference/6.8/security-privileges.html) to make logstash / kibana work properly. 
   * therefore you are better off :
-    * [creating another role](./access_pattern_cheatsheet.md#create-a-role) with all required cluster/indices privileges
+    * [creating another role](./basic_usage_cheatsheet.md#create-a-role) with all required cluster/indices privileges
       * for logstash, you should **at least** provide :
         * `manage_index_templates` in the cluster privilege list
         * add index pattern(s) to the indices access list, e.g. you may want logstash to flush log data with index name like `logstash-*`, `log-*`, or whatever patterns you attempt to use for indexing.
@@ -179,10 +179,10 @@ Note:
             ]
         }
         ```
-    * [creating another new user](./access_pattern_cheatsheet.md#create-user) and assigning the new role to the new user.
+    * [creating another new user](./basic_usage_cheatsheet.md#create-user) and assigning the new role to the new user.
       * for logstash, you simply assign `logstash_role` to the role list of your new user
       * for kibana, you assign the built-in role `kibana_system` and the role you created `kibana_role` to the role list of your new user. Note that the built-in role `kibana_system` contains cluster privilege `monitor` which is required by kibana, so it's good to reuse it.
-* you can [change the passwords](./access_pattern_cheatsheet.md#change-password) of an existing user account for security concern,
+* you can [change the passwords](./basic_usage_cheatsheet.md#change-password) of an existing user account for security concern,
 * Before production, remember to set false to the option `accept_default_password`.
 * [Follow the steps](https://discuss.elastic.co/t/dec-22nd-2017-en-x-pack-i-lost-forgot-the-elastic-user-password-am-i-locked-out-forever/110075) while you forgot password of the built-in account (TODO)
 
