@@ -48,7 +48,10 @@ Note don't list privilege fields of any user in `mysql.user`, they're NOT synchr
 SHOW GRANTS FOR  YOUR_USER_ACCOUNT@YOUR_HOSTNAME;
 ```
 
-##### Grant privilege
+##### Create new user
+See [CREATE USER](https://mariadb.com/kb/en/create-user/)
+
+##### [Grant privilege](https://mariadb.com/kb/en/grant/)
 Grant certain type(s) of privilege to specific database for specific user.
 ```
 GRANT CREATE,DROP,INDEX, ANY_VALID_PRIVILEGE_OPTIONS  ON \
