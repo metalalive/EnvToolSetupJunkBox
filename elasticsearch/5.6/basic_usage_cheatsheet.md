@@ -65,6 +65,27 @@ which returns list of running nodes like this:
 ]
 ```
 
+#### [License](https://www.elastic.co/guide/en/elasticsearch/reference/current/license-settings.html)
+By default, the license type is `trial` on new fresh installation, after `version >= 6.3` , elasticsearch has provided open source version of elasticsearch to install (OSS in short) since version `6.3`. The [license type](https://www.elastic.co/subscriptions) affects the functionalities that are allowed to use in elasticsearch e.g. Xpack, machine-learning.
+
+* check your license type, and expiry time :
+```
+curl -s -H "Accept: application/json" --request GET "http://USERNAME:PASSWORD@HOSTNAME:PORT/_license?pretty"
+```
+
+unfortunately, most functions of x-pack plugin are DISABLED under **basic license** privilege.
+
+For older versions (`version < 6.3`), you can get a **basic license** for free by requesting a key file that will be used to register and get the **basic license** (will be expired after one year). Here are the steps :
+* start with filling the request form at [here](https://license.elastic.co/registration/). 
+* On the form submission, the website will email you with subsequent steps you must follow, and dowdnload link to a key file
+* download the key file (e.g. `DOWNLOADED_KEY_FILE_PATH`), update your elasticsearch license by consuming the API :
+```
+curl -s -H "Content-Type: application/x-ndjson" -H "Accept: application/json" --data-binary \
+    '@DOWNLOADED_KEY_FILE_PATH' --request PUT  "http://USERNAME:PASSWORD@HOSTNAME:PORT/_xpack/license?pretty"
+```
+Note:
+Without URL query parameter `acknowledge=true`, the key file won't be used and **basic license** won't be applied, instead you will get message to list all functions that will be disabled after applying the basic license, after reading through all effects , you can add the query parameter `acknowledge=true` back to the API URL, this time it will truly apply the key file and update to **basic license** for you.
+
 ### Index
 * List all existing indices
 ```
