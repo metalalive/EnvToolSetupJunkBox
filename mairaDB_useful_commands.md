@@ -21,6 +21,11 @@ sudo -u <OS_ACCOUNT_FOR_MARIADB>  kill -SIGTERM  <mysqld_PID>
 sudo -u <OS_ACCOUNT_FOR_MARIADB>  /PATH/TO/MARIADB/INSTALL/bin/mysql -u  <USER_ACCOUNT> -p -h <IP_OR_DOMAIN_NAME>
 ```
 
+##### Check version
+```
+SELECT VERSION();
+```
+
 ##### List all existing databases
 ```
 SHOW DATABASES;
@@ -54,22 +59,29 @@ See [CREATE USER](https://mariadb.com/kb/en/create-user/)
 ##### [Grant privilege](https://mariadb.com/kb/en/grant/)
 Grant certain type(s) of privilege to specific database for specific user.
 ```
-GRANT CREATE,DROP,INDEX, ANY_VALID_PRIVILEGE_OPTIONS  ON \
-     `DATABASE_NAME`.* TO 'DB_USERNAME'@'IP_OR_DOMAIN_NAME';
+GRANT  ANY_VALID_PRIVILEGE_OPTIONS  ON  `DATABASE_NAME`.`TABLE_NAME` TO 'DB_USERNAME'@'IP_OR_DOMAIN_NAME';
 ```
+Note
+* `ANY_VALID_PRIVILEGE_OPTIONS` can be a list of valid privilege options, they depend on [privilege level](https://mariadb.com/kb/en/grant/#privilege-levels)
+* `TABLE_NAME` can also be wildcard character `*`, which means to grant the privileges to all tables under specific database :
+  ```
+  `DATABASE_NAME`.*
+  ```
+* **The command can also be completed even if `TABLE_NAME` points to non-existent database table.**
 
-It can also grant privileges to specific database table by modifying :
-```
-`DATABASE_NAME`.*
-```
-to 
-```
-`DATABASE_NAME`.`TABLE_NAME`
-```
 Example #1 : To modify max_user_connections of a DB user, you have :
 ```
 GRANT USAGE ON `DATABASE_NAME`.* TO  'DB_USERNAME'@'IP_OR_DOMAIN_NAME'  WITH max_user_connections <NEW_VALUE>;
 ```
+
+##### [Revoke privilege](https://mariadb.com/kb/en/revoke/)
+Revoke certain type(s) of privileges that were granted to specific user.
+```
+REVOKE ANY_VALID_PRIVILEGE_OPTIONS  ON `DATABASE_NAME`.`TABLE_NAME`  FROM  'DB_USERNAME'@'IP_OR_DOMAIN_NAME';
+```
+
+
+
 
 ##### List table size of a specific database in descending order
 ```
