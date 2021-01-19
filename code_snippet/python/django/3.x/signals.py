@@ -1,4 +1,8 @@
+import sys
 from django.db     import  models
+from django.db.models  import signals as DjangoSignal
+from django.dispatch   import receiver as DjangoSignalReceiver
+
 
 def user_roles_changing_handler(sender, **kwargs):
     ### print("role changing, kwargs : "+ str(kwargs))
@@ -44,6 +48,15 @@ models.signals.post_save.connect(user_postsave_handler, sender=GenericUserProfil
 
 models.signals.m2m_changed.connect(user_roles_changing_handler, sender=GenericUserProfile.roles.through)
 models.signals.m2m_changed.connect(user_grps_changing_handler, sender=GenericUserProfile.groups.through)
+
+
+_module = sys.modules[__name__] 
+# signal receiver function to get pre-migrate state & apps setting
+@DjangoSignalReceiver(DjangoSignal.pre_migrate)
+def pre_migrate_signal_receiver(sender, using, apps, app_config, **kwargs):
+    setattr(_module, '_pre_migrate_apps', apps)
+
+
 
 # Reference
 # https://stackoverflow.com/questions/23795811/django-accessing-manytomany-fields-from-post-save-signal
