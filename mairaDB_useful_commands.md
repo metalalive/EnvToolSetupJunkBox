@@ -44,7 +44,8 @@ SHOW COLUMNS FROM <YOUR_TABLE_NAME>;
 
 ##### List attributes of all available database users
 ```
-SELECT  host,user,max_connections,max_user_connections  FROM mysql.user
+SELECT  host, user, max_connections, max_user_connections  FROM mysql.user
+SELECT Host, Db, User, Select_priv, Update_priv, grant_priv FROM mysql.db
 ```
 
 ##### Check user privilege
