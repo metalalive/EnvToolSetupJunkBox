@@ -21,7 +21,7 @@ from . import celeryconfig
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'restaurant.settings')
 
 app = Celery('whatever_app_label')
-# load centralized configuration module
+# programmatically load configuration module
 app.config_from_object(celeryconfig)
 
 if __name__ == '__main__':
@@ -119,17 +119,18 @@ Note that :
 
 ```
 > cd <PATH/TO/PROJ/HOME>
-> celery --app=proj123.init456  worker  --loglevel=INFO --hostname=<YOUR_NODE_NAME>  -E \
-    -Q queue_name_1,queue_name_2,queue_name_3
+> celery --app=proj123.init456  --config=proj123.init456.mycelerycfg  worker  --loglevel=INFO \
+    --hostname=<YOUR_NODE_NAME>  -E -Q queue_name_1,queue_name_2,queue_name_3
 ```
 note that :
   * `celery` utility will automatically find the file `celery.py` under the package `proj123/init456`.
+  * `--config` allows you to specify the module path of celery configuration object (`proj123.init456.mycelerycfg`) at OS console, the alternative is to load configuration object programmatically by `Celery.config_from_object()` in your [initialization code](#initialization-code).
   * default queue name is `celery`, you can specify multiple queue name by adding option `-Q` with a list of queue name, also the queue names in the command above must match the name in your configuration module.
   * `--loglevel` can be `INFO`, `DEBUG`, `WARNING`
   * If you need to start several worker processes on the same physical host machine, make sure to set distinct node name `<YOUR_NODE_NAME>` in `--hostname` option for each worker process. Also `<YOUR_NODE_NAME>` is NOT related to the app label `whatever_app_label` you set in the [initialization code](#initialization-code)
   * If your tasks require Django library and you didn't set environment variable `DJANGO_SETTINGS_MODULE` in your [initialization code](#initialization-code), then you can also set `DJANGO_SETTINGS_MODULE` when running this command, for example :
     ```
-    DJANGO_SETTINGS_MODULE='<YOUR_PATH_TO_DJANGO_SETTING_FILE>' celery --app=xxx worker -Q xxx1,xxx2,xxx3 ...
+    DJANGO_SETTINGS_MODULE='<YOUR_PATH_TO_DJANGO_SETTING_FILE>' celery --app=xxx5 --config=xxx4 worker -Q xxx1,xxx2,xxx3 ...
     ```
 
 ##### Background
@@ -142,11 +143,13 @@ Assume project path is at `<PATH/TO/YOUR/PROJ>/proj123`
 ```
 start-stop-daemon --start --chuid <USER_NAME> --chdir <PATH/TO/YOUR/PROJ>  --background  --make-pidfile \
     --pidfile "celerydaemon.pid" --name celery_daemon   --user  <USER_NAME>  --exec <PATH/TO/YOUR/CELERY/BIN> \
-    --  --app=proj123 worker --loglevel=INFO  --hostname=<YOUR_NODE_NAME>  --logfile=./celerydaemon.log \
-        -E -Q queue_name_1,queue_name_2,queue_name_3
+    --  --app=proj123  --config=proj123.mycelerycfg  worker --loglevel=INFO  --hostname=<YOUR_NODE_NAME> \
+        --logfile=./celerydaemon.log  -E -Q queue_name_1,queue_name_2,queue_name_3
 ```
 Note that `--chuid` may be different from `--user` depending on application requirement.
 After the command above, check PID from `<PATH/TO/YOUR/PROJ>/celerydaemon.pid` and log content from `<PATH/TO/YOUR/PROJ>/celerydaemon.log`
+
+(TODO) how to dynamically set environment variable for Django settings file ?
 
 
 * To stop daemon:
