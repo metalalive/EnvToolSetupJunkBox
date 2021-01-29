@@ -119,13 +119,18 @@ Note that :
 
 ```
 > cd <PATH/TO/PROJ/HOME>
-> celery --app=proj123.init456  worker  --loglevel=INFO  -E -Q queue_name_1,queue_name_2,queue_name_3
+> celery --app=proj123.init456  worker  --loglevel=INFO --hostname=<YOUR_NODE_NAME>  -E \
+    -Q queue_name_1,queue_name_2,queue_name_3
 ```
 note that :
-  * `celery` utility will automatically find the file `celery.py` under `proj123/init456`.
+  * `celery` utility will automatically find the file `celery.py` under the package `proj123/init456`.
   * default queue name is `celery`, you can specify multiple queue name by adding option `-Q` with a list of queue name, also the queue names in the command above must match the name in your configuration module.
   * `--loglevel` can be `INFO`, `DEBUG`, `WARNING`
-
+  * If you need to start several worker processes on the same physical host machine, make sure to set distinct node name `<YOUR_NODE_NAME>` in `--hostname` option for each worker process. Also `<YOUR_NODE_NAME>` is NOT related to the app label `whatever_app_label` you set in the [initialization code](#initialization-code)
+  * If your tasks require Django library and you didn't set environment variable `DJANGO_SETTINGS_MODULE` in your [initialization code](#initialization-code), then you can also set `DJANGO_SETTINGS_MODULE` when running this command, for example :
+    ```
+    DJANGO_SETTINGS_MODULE='<YOUR_PATH_TO_DJANGO_SETTING_FILE>' celery --app=xxx worker -Q xxx1,xxx2,xxx3 ...
+    ```
 
 ##### Background
 
@@ -137,7 +142,7 @@ Assume project path is at `<PATH/TO/YOUR/PROJ>/proj123`
 ```
 start-stop-daemon --start --chuid <USER_NAME> --chdir <PATH/TO/YOUR/PROJ>  --background  --make-pidfile \
     --pidfile "celerydaemon.pid" --name celery_daemon   --user  <USER_NAME>  --exec <PATH/TO/YOUR/CELERY/BIN> \
-    --  --app=proj123 worker --loglevel=INFO --logfile=./celerydaemon.log \
+    --  --app=proj123 worker --loglevel=INFO  --hostname=<YOUR_NODE_NAME>  --logfile=./celerydaemon.log \
         -E -Q queue_name_1,queue_name_2,queue_name_3
 ```
 Note that `--chuid` may be different from `--user` depending on application requirement.
@@ -154,6 +159,7 @@ start-stop-daemon --stop --chuid <USER_NAME> --chdir <PATH/TO/YOUR/PROJ>  --make
 
 
 #### Reference
+* [Workers guide](https://docs.celeryproject.org/en/stable/userguide/workers.html)
 * [next step](https://docs.celeryproject.org/en/latest/getting-started/next-steps.html)
 * [configuration module](https://docs.celeryproject.org/en/stable/userguide/configuration.html#std-setting-imports)
 * [daemonization](https://docs.celeryproject.org/en/stable/userguide/daemonizing.html)
