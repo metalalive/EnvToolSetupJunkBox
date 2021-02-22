@@ -121,14 +121,14 @@ you have :
 Note:
 * you have to either provide `http` (or `https`) or `socket` option to accept incoming request
   * if `http`/`https` is set, then uwsgi instance will run as a web server with http/https protocol, you can then test it with frontend tools (e.g. curl, web browsers)
-  * if `socket` is set, then uwsgi instance will run as a server with WSGI protocol. In such case you will need extra http werver like Apache or Nginx to hook with the running uwsgi instance.
+  * if `socket` is set, then uwsgi instance will run as a server with WSGI protocol. In such case you will need extra http server like Apache or Nginx to hook with the running uwsgi instance.
 * you have to either provide `wsgi-file`  or `module` option as the entrypoint of your WSGI application
   * for `wsgi-file` , the default entrypoint is a python callable object named `application`
   * for `module` , the entrypoint is named as the same as `APPLICATION_CALLABLE` in the python module `PYTHON_PACKAGE.TO_YOUR_MODULE`
 * `env` is a list of key-value pairs as OS environment variables, delimited by whitespace
 * `virtualenv` indicate the path to your python virtualenv folder, if you built uwsgi binary tied to specific python version, you have to ensure **the python version used in your virtualenv** matches **the python version used to build your uwsgi binary**, otherwise you'll hit [this error](https://stackoverflow.com/questions/56443552)
 * `pidfile` only record main process of the running uwsgi instance, if you want to terminate the running uwsgi instance in OS, you will have to send SIGINT to the process whose ID is stored in `pidfile`, see [signals for controlling uWSGI](https://uwsgi-docs.readthedocs.io/en/latest/Management.html?highlight=SIGINT#signals-for-controlling-uwsgi)
-* `daemonize` will make a uwsgi instance run as a daemon, without this option a uwsgi instance runs as foreground process.
+* `daemonize` will make a uwsgi instance run as a daemon, without this option a uwsgi instance runs as foreground process(es).
 
 
 #### Reference
