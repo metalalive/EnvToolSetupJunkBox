@@ -1,12 +1,13 @@
 
-#### Nginx 1.17.9
+### Nginx 1.17.9
 
-###### Build from source
-* Environment :
-  * Debian 9 (Raspbian Stretch)
+Environment :
+  * Debian 9 (Raspbian Stretch), Ubuntu LTS 14.04
   * OpenSSL 1.1.1c, also built from source
-  
-* configure the build by running `./auto/configure`, carefully check each parameter
+
+
+#### Build from source  
+configure the build by running `./auto/configure`, carefully check each parameter
 ```
 ./auto/configure \
  --prefix=/PATH/TO/YOUR/SERVER/SETUP_FOLDER  \
@@ -44,24 +45,90 @@
 
 ```
 
-Note that you may need to add more paths to `--with-cc-opt` and `--with-ld-opt` successfully complete `cmake` procedure
+Note that :
+* you may need to add more paths to `--with-cc-opt` and `--with-ld-opt` successfully complete `cmake` procedure
+* `--prefix` indicate where your server setup will be (e.g. configuration files, log files, static files ... etc), once you install nginx by running `make install` the nginx installer will generate all reqeuired files to `/PATH/TO/YOUR/SERVER/SETUP_FOLDER`, that is, the folder specified in `--prefix` option
+* `--with-debug` is essential if you need to modify logging level of a running nginx instance for debugging purpose.
 
 
-* Building nginx takes about 3 hours on Raspberry PI 1
+Building nginx takes about 3 hours on Raspberry PI 1
 ```
 make >& build.log &
 ```
 
-
-* Installation, may be optional
+Installation, may be optional
 ```
 sudo make install >& install.log &
 ```
 
+#### Configuration
+Here is a simple example :
 
+```perl
+#user  nobody; # will be www-data
+worker_processes  1;
+# nginx seems to log error messages at INFO level
+error_log   logs/nginx.error.log info;
+pid         logs/nginx.pid; # to run nginx instance as a daemon
+worker_rlimit_nofile  128;
 
-##### Reference
+events {
+    worker_connections  5; # must not be greater than worker_rlimit_nofile
+}
+
+http {
+    include       conf/mime.types;
+    default_type  application/octet-stream;
+    sendfile      on;
+    keepalive_timeout  37;
+
+    # the upstream component nginx server needs to connect to
+    upstream django {
+        server localhost:8009; # use web port socket
+    }
+
+    server {
+        listen       8008;
+        server_name  localhost;
+        charset      utf-8;
+        access_log   logs/nginx.access.log;
+        client_max_body_size  16M;
+        allow        127.0.0.1; # allow the requests from these IPs (they cannot be domain name)
+        deny         all; # deny rest of IPs, note the order of the allow/deny declaratives will affect your IP whitelisting
+
+        location / { # forward all the paths to WSGI application (hosted in uwsgi in this case)
+            include     conf/uwsgi_params;
+            uwsgi_pass  django; # specify the name of upstream component
+            ##uwsgi_pass   localhost:8009;
+        }
+    }
+}
+```
+
+#### Run
+Go to `/PATH/TO/YOUR/SERVER/SETUP_FOLDER` run the command :
+
+```
+./sbin/nginx -c  ./conf/nginx.conf
+```
+* if your `nginx.conf` is not in `/PATH/TO/YOUR/SERVER/SETUP_FOLDER/conf`, you will need to specify full path of the configuration file.
+* once syntax check of the configuration file passed, nginx will run as a daemon if `pid` is set in `nginx.conf`
+
+For reloading nginx configurations without stopping the running instance, run the command:
+```
+./sbin/nginx -s reload -c  ./conf/nginx.conf
+```
+
+The command below will (gracefully ?) terminate the running nginx instance :
+```
+./sbin/nginx -s stop -c  ./conf/nginx.conf
+```
+
+#### Reference
 * [Build Nginx from source -- MatthewVance](https://github.com/MatthewVance/nginx-build/blob/master/build-nginx.sh)
 * [How To Compile Nginx From Source and Install on Raspbian Jessie](https://www.linuxbabe.com/raspberry-pi/compile-nginx-source-raspbian-jessie)
 * [Build Nginx from source - offiical doc](https://docs.nginx.com/nginx/admin-guide/installing-nginx/installing-nginx-open-source/)
+* [Configure Nginx running with uWSGI](https://uwsgi-docs.readthedocs.io/en/latest/tutorials/Django_and_nginx.html#basic-nginx)
+* [How To Set Up uWSGI and Nginx to Serve Python Apps on Ubuntu 14.04](https://www.digitalocean.com/community/tutorials/how-to-set-up-uwsgi-and-nginx-to-serve-python-apps-on-ubuntu-14-04)
+* [Nginx full-example configuration](https://www.nginx.com/resources/wiki/start/topics/examples/full/)
 
