@@ -20,7 +20,7 @@ all these software above are built from source
 There are 2 ways of building uwsgi binary :
 1. build with python plugin, so your uwsgi binary will be tied to specific python version
 2. build language-independent binary first, and then build python plungin for different python versions.
-  * the second option does NOT seem to work for python intepreter built from source (in my case, python3.9), but the workaround is to follow the first option, build several uwsgi binaries, each of which is tied to specific python version. It works well **due to the fact that a built uwsgi binary is actually a standalone program file**
+  * the second option does NOT seem to work for python intepreter built from source (in my case, python3.9), but the workaround is to follow the first option, build several uwsgi binaries, each of which is tied to specific python version. It works well **due to the fact that a built uwsgi binary is actually a standalone executable file**
 
 The first option above can be further split into :
 * build using `make` command
@@ -89,7 +89,7 @@ def application(env, start_resp_cb):
     --wsgi-file  PATH/TO/YOUR/PYTHON/APP  --enable-threads --processes 1  --threads 1
 ```
 
-Note that configuration file format can be ini, xml, and json, see [this section](https://uwsgi-docs.readthedocs.io/en/latest/Configuration.html#ini-files) for examples.
+Note that configuration file can be ini, xml, and json format, see [this section](https://uwsgi-docs.readthedocs.io/en/latest/Configuration.html#ini-files) for more detail.
 
 Assume your config file `xxx.ini` looks like this :
 ```Windows Registry Entries
@@ -136,4 +136,5 @@ Note:
 * [PEP3333](https://www.python.org/dev/peps/pep-3333/)
 * [uWSGI options](https://uwsgi-docs.readthedocs.io/en/latest/Options.html)
 * [Deploy Django behind uWSGI and Nginx](https://www.vndeveloper.com/deploy-django-in-sub-directory-behind-uwsgi-and-nginx-on-centos-7/?fbclid=IwAR109_JIrhh_gssvbPvJ8FM6smBBW4w8bLxawx1dv9SoLauZLCf0z7JOMGI)
+* [Setting up Django and your web server with uWSGI and nginx](https://uwsgi-docs.readthedocs.io/en/latest/tutorials/Django_and_nginx.html)
 
