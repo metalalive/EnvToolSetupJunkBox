@@ -120,12 +120,20 @@ UPDATE 'your_table' SET 'parent_id' = NULL WHERE 'parent_id' IS NOT NULL;
 DELETE FROM 'your_table';
 ```
 
-#### Reset auto-increment of a table
+#### Auto-increment key
+##### [Reset auto-increment of a table](https://mariadb.com/kb/en/auto_increment-handling-in-innodb/#setting-auto_increment-values)
 According to [this stackoverflow answer](https://stackoverflow.com/a/8923132/9853105) , If you use InnoDB as storage engine, you must ensure the reset value is greater than (not equal to) current maximum index (in the pk field of the table)
 
 ``` 
 ALTER TABLE your_table_name AUTO_INCREMENT = <ANY_POSITIVE_INTEGER_VALUE>;
 ```
+then double-check the value by running `SHOW CREATE TABLE <YOUR_TABLE_NAME>;` , you'll see the current `AUTO_INCREMENT` value of the table.
+
+##### Assume Your table has auto-increment primary key, and it grows big (e.g. > 1m rows) ...
+the default index (for that auto-increment pk) also grows , in some cases one insertion will lead to several splitting and restructuring operation on the index (due to the nature of B+tree), the restructure would then lead to page reallocation at low-level OS which spents more time on restructing.
+
+[TODO: figure out how to solve it]
+
 
 #### Character set and  Collation in database or table 
 
