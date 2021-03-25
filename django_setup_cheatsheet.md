@@ -18,16 +18,21 @@ then new migration file `<MIGRATION_SERIAL_NUMBER>_xxxx.py` is generated to `<YO
 
 To further check the raw SQL commands generated for this migration, use `sqlmigrate` command :
 ```
-python  manage.py  sqlmigrate  <YOUR_APP_NAME>  <MIGRATION_SERIAL_NUMBER>  | less
+python  manage.py  sqlmigrate  <YOUR_APP_NAME>  <MIGRATION_SERIAL_NUMBER> --database <DB_SETTING_KEY> \
+    --settings <PATH.TO.SETTING_MODULE> --backwards
 ```
+Note:
+* `<DB_SETTING_KEY>` is the key value to specific database setup in `DATABASES` parameter of `settings.py`.
+* `--backwards` is optional for viewing auto-generated SQL statements for migration rollback
 
 Once you ensure everything in the migration file is what you expected, you commit the migration by running `migrate` command :
 ```
-python  manage.py  migrate  <YOUR_APP_NAME>  <MIGRATION_NAME> --database <DB_SETTING_KEY>
+python  manage.py  migrate  <YOUR_APP_NAME>  <MIGRATION_NAME> --database <DB_SETTING_KEY> \
+    --settings <PATH.TO.SETTING_MODULE>
 ```
 * `<MIGRATION_NAME>` can be `<MIGRATION_SERIAL_NUMBER>` which is automatically generated sequence number by default by the command `django makemigration`, e.g. 0001, 0002 ...
 * If `<MIGRATION_NAME>` is `zero`, that indicates django to revert all the way back to **the state before initial migration**. It also reset all migration records in `django_migration` database table (a table for internal use).
-* `<DB_SETTING_KEY>` is the key value to specific database setup in `DATABASES` parameter of `settings.py`.
+
 
 #### Accidental table deletion
 If a database table, or column of a table for an application, is dropped accidentally , 
