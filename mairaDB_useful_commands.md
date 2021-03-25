@@ -83,14 +83,27 @@ Query table status with conditions, e.g.
 ```
 SHOW TABLE STATUS FROM <YOUR_DATABASE_NAME> WHERE NAME LIKE '%<KEYWORD>%';
 ```
-it will return more detail that shows metadata of the tables, and columns e.g. `Name`, `Engine`, `Version`, `Row_format`, `Rows`, `Avg_row_length`, `Data_length`, `Max_data_length`, `Index_length`, `Data_free`, `Auto_increment` `Create_time`,  `Update_time`, `Check_time`, `Collation`, `Create_options`, `Max_index_length`,  `Temporary`
+it will return more detail that shows metadata of the tables, and columns e.g. `Name`, `Engine`, `Version`, `Row_format`, `Rows`, `Avg_row_length`, `Data_length`, `Max_data_length`, `Index_length`, `Data_free`, `Auto_increment` `Create_time`,  `Update_time`, `Check_time`, `Collation`, `Create_options`, `Max_index_length`,  `Temporary`.
+
+Following statement shows table schema in similay way:
+```
+SHOW CREATE TABLE <YOUR_TABLE_NAME>;
+```
+
+##### Delete and ignore
+When mariadb database encounters any error on `DELETE` operation , it aborts the process of deleting rows even the subsequent rows (expected to be deleted) are safe to delete (so left them unprocessed).
+In such situation you could try `INGORE` on `DELETE` operation to ignore the ignorable errors, and switch to next row to delete  
+```
+DELETE IGNORE FROM <YOUR_TABLE_NAME> WHERE <ANY_VALID_CONDITION_CLAUSE>;
+```
+**BUT** be aware of [out-of-sync issue if you have master/slave mysql replica](https://www.percona.com/blog/2012/02/02/stop-delete-ignore-on-tables-with-foreign-keys-can-break-replication/)  in your deployment.
 
 
+### Privilege
 ##### List all columns (and their attributes) of a database table
 ```
 SHOW COLUMNS FROM <YOUR_TABLE_NAME>;
 ```
-
 
 ##### List attributes of all available database users
 ```
@@ -130,6 +143,68 @@ Revoke certain type(s) of privileges that were granted to specific user.
 ```
 REVOKE ANY_VALID_PRIVILEGE_OPTIONS  ON `DATABASE_NAME`.`TABLE_NAME`  FROM  'DB_USERNAME'@'IP_OR_DOMAIN_NAME';
 ```
+
+### Index
+#### Show all indexes of a table
+```
+SHOW INDEX FROM <YOUR_TABLE_NAME>;
+```
+#### Compound primary key in a table
+```
+CREATE TABLE <YOUR_TABLE_NAME> (t1id INT, t2id INT, PRIMARY KEY (t1id, t2id));
+```
+The SQL statement above also works in **postgre SQL** and **Oracle**.
+By checking the table schema, you should see both of `t1id` and `t2id` are marked as primary key.
+```
+> SHOW COLUMNS FROM <YOUR_TABLE_NAME>;
++------------+------------------+------+-----+---------+-------+
+| Field      | Type             | Null | Key | Default | Extra |
++------------+------------------+------+-----+---------+-------+
+| t1id       | int(4) unsigned  | NO   | PRI | NULL    |       |
+| t2id       | int(4) unsigned  | NO   | PRI | NULL    |       |
++------------+------------------+------+-----+---------+-------+
+```
+Also the PRIMARY KEY index contains these 2 keys :
+```
+> SHOW INDEX FROM <YOUR_TABLE_NAME>;
+-+------------------+------------+------------+--------------+-------------+-----------+-------------+----------+--------+------+------------+---------+
+| Table             | Non_unique | Key_name   | Seq_in_index | Column_name | Collation | Cardinality | Sub_part | Packed | Null | Index_type | Comment |
++-------------------+------------+------------+--------------+-------------+-----------+-------------+----------+--------+------+------------+---------+
+| <YOUR_TABLE_NAME> |          0 | PRIMARY    |            1 | t1id        | A         |           0 |     NULL | NULL   |      | BTREE      |         |
+| <YOUR_TABLE_NAME> |          0 | PRIMARY    |            2 | t2id        | A         |           0 |     NULL | NULL   |      | BTREE      |         |
++-------------------+------------+------------+--------------+-------------+-----------+-------------+----------+--------+------+------------+---------+
+```
+which means :
+* each entry of the index contains 8-byte data, in the example above, upper 4-byte part is used to store for one column of the compound key (either `t1id` or `t2id`), lower 4-byte part is used to store for the other column.
+* One table may have more than one indexes, e.g. extra index for unique constraint, index for each foreign-key column (MySQL and MariaDB actually do so).
+* Number of indexes within a table has tradeoff, more indexes might (or might not, sometimes) speed up read operations, but slow down write operations  (especially insertions) because your database needs to maintain all existing indexes of the table on the single write.
+
+#### Drop compound-key index which includes foreign-key constraint
+In most cases you can simply delete an index without any error
+```
+ALTER TABLE `<YOUR_TABLE_NAME>` DROP INDEX `<VALID_INDEX_NAME>`
+```
+
+BUT if the compound-key index requires to reference a foreign key constraint, mysql / mariadb seems to internally do some magic and let the foreign key pointed to the index , so you will get the error below on `DROP INDEX` :
+```
+ERROR 1553 (HY000): Cannot drop index '<VALID_INDEX_NAME>': needed in a foreign key constraint
+```
+
+You have 2 options as workaround :
+* temporarily delete the foreign key constraint, immediately drop the compound index, then create the same foreign key constraint back
+  ```
+  ALTER TABLE `<YOUR_TABLE_NAME>` DROP FOREIGN KEY `<YOUR_FK_CONSTRINT_NAME>`;
+  ALTER TABLE `<YOUR_TABLE_NAME>` DROP INDEX <YOUR_INDEX_NAME>;
+  ALTER TABLE `<YOUR_TABLE_NAME>` ADD CONSTRAINT `<YOUR_FK_CONSTRINT_NAME>` FOREIGN KEY (`<FK_IN_YOUR_TABLE>`) REFERENCES `<YOUR_REFERENCED_TABLE>`(`<YOUR_REFERENCED_COLUMN>`)
+  ```
+  * the downside of this option is : the constraint name `<YOUR_FK_CONSTRINT_NAME>` includes hashed value, you need to fetch the correct constraint name (by `SHOW CREATE TABLE <YOUR_TABLE_NAME>`) before you can delete the foreign key constraint...
+* temporarily disable the key constraints of the table, drop the compound index, then enable them back later.
+See [here](https://stackoverflow.com/questions/63497147) for issue description
+  ```
+  ALTER TABLE `<YOUR_TABLE_NAME>` DISABLE KEYS;
+  ALTER TABLE `<YOUR_TABLE_NAME>` DROP INDEX `<YOUR_INDEX_NAME>`;
+  ALTER TABLE `<YOUR_TABLE_NAME>` ENABLE KEYS;
+  ```
 
 ### Statistic data
 #### [Query execution plan](https://mariadb.com/kb/en/explain/)
@@ -172,7 +247,7 @@ SELECT TABLE_NAME,COLUMN_NAME, REFERENCED_TABLE_NAME,REFERENCED_COLUMN_NAME \
      and REFERENCED_TABLE_NAME = 'table_name';
 ```
 
-#### List index datan
+#### List index data
 To get metadata of an index from a InnoDB-based table, you can perform query on `mysql.innodb_index_stats`. For example, to get index size of a specific table, you have :
 ```
 SELECT table_name, index_name, stat_name, stat_value, ROUND(stat_value * @@innodb_page_size / 1024, 2)\
@@ -182,6 +257,15 @@ SELECT table_name, index_name, stat_name, stat_value, ROUND(stat_value * @@innod
 Note :
 * `@@innodb_page_size` means to read value from global variable  `innodb_page_size`, which defaults to 16 KB
 * `stat_name` could be `size` (total number of pages used in the entire index, remind that innodb use B-tree+ as index data structure) , or `n_leaf_pages` (total number of leaf pages for the index)
+
+#### Pages allocated in index(es)
+`information_schema.innodb_buffer_page` table contains information about pages in the buffer pool. For example, to get information of the pages allocated to indexes of a table, you have :
+```
+SELECT INDEX_NAME, PAGE_NUMBER, NUMBER_RECORDS, DATA_SIZE, PAGE_STATE, PAGE_TYPE  FROM  information_schema.innodb_buffer_page WHERE TABLE_NAME = '`<YOUR_DB_NAME>`.`<YOUR_TABLE_NAME>`' ORDER BY PAGE_NUMBER ;
+```
+* `NUMBER_RECORDS` The number of records within the page.
+* `DATA_SIZE` The sum of the sizes of the records. This column is applicable only to pages with a `PAGE_TYPE` value of `INDEX`. 
+
 
 ### Misc.
 #### Create self-referencing table
@@ -198,6 +282,27 @@ UPDATE 'your_table' SET 'parent_id' = NULL WHERE 'parent_id' IS NOT NULL;
 DELETE FROM 'your_table';
 ```
 
+#### List gap values associated with a column (mostly primary key) of a table
+The following SQL prints the ranges of the gap values that haven't been used in the column :
+```
+SELECT  m3.lowerbound + 1, m3.upperbound - 1 FROM ( \
+    SELECT m1.id as lowerbound, MIN(m2.id) as upperbound FROM deadlock_test m1 \
+    INNER JOIN deadlock_test AS m2 ON m1.id < m2.id  GROUP BY m1.id \
+    ) m3  WHERE m3.lowerbound < m3.upperbound - 1;
+```
+If the column is key (primary key, foreign key ... etc) in the subquery , you should see the key index is applied in the execution plan :
+```
+EXPLAIN SELECT m1.id as lowerbound, MIN(m2.id) as upperbound FROM deadlock_test m1 INNER JOIN deadlock_test AS m2 ON m1.id < m2.id  GROUP BY m1.id;
++------+-------------+-------+-------+---------------+---------+---------+------+------+--------------------------------------------------------------+
+| id   | select_type | table | type  | possible_keys | key     | key_len | ref  | rows | Extra                                                        |
++------+-------------+-------+-------+---------------+---------+---------+------+------+--------------------------------------------------------------+
+|    1 | SIMPLE      | m1    | index | PRIMARY       | PRIMARY | 4       | NULL |   11 | Using index; Using temporary; Using filesort                 |
+|    1 | SIMPLE      | m2    | index | PRIMARY       | PRIMARY | 4       | NULL |   11 | Using where; Using index; Using join buffer (flat, BNL join) |
++------+-------------+-------+-------+---------------+---------+---------+------+------+--------------------------------------------------------------+
+```
+For detail, please read [here](https://stackoverflow.com/a/66669932/9853105) 
+
+
 #### Auto-increment key
 ##### [Reset auto-increment of a table](https://mariadb.com/kb/en/auto_increment-handling-in-innodb/#setting-auto_increment-values)
 According to [this stackoverflow answer](https://stackoverflow.com/a/8923132/9853105) , If you use InnoDB as storage engine, you must ensure the reset value is greater than (not equal to) current maximum index (in the pk field of the table)
@@ -212,6 +317,27 @@ the default index (for that auto-increment pk) also grows , in some cases one in
 
 [TODO: figure out how to solve it]
 
+#### Deadlock in MySQL / MariaDB
+##### Case 1 : Lock non-existent rows on concurrent insertion
+This is an [old bug in MySQL community](https://bugs.mysql.com/bug.php?id=25847) that hasn't been fixed since 2007, For more discussion please read [this](https://stackoverflow.com/a/58526440/9853105) .
+You can reproduce that by acquiring gap lock (also called [insert intention lock](https://dev.mysql.com/doc/refman/8.0/en/innodb-locking.html#innodb-insert-intention-locks) in MySQL / InnoDB), performing 2 insertions to the same table within 2 separate sessions , the execution flow is described below :
+```
+Session #1: CREATE TABLE mytable (id integer PRIMARY KEY) ENGINE=InnoDB;
+Session #1: SET AUTOCOMMIT = 0;
+Session #2: SET AUTOCOMMIT = 0;
+Session #1: SELECT id FROM mytable WHERE id = 1 FOR UPDATE; -- succeed
+Session #2: SELECT id FROM mytable WHERE id = 2 FOR UPDATE; -- succeed
+Session #1: INSERT INTO mytable (id) VALUES (1); -- Hang
+Session #2: INSERT INTO mytable (id) VALUES (2); -- Session #1: OK, Session #2: Deadlock found when trying to get lock; try restarting transaction
+```
+To avoid this issue on the concurrent writes, the alternative is to use `START TRANSACTION; <VALID_SQL_STATEMENTS>;  COMMIT;` instead of relying on `SELECT ... FOR UPDATE`. For example :
+```
+START TRANSACTION;
+SELECT id FROM mytable WHERE id = 2 ;
+INSERT INTO mytable (id) VALUES (2);
+COMMIT;
+```
+So it will NOT cause deadlock even when 2 sessions insert a row concurrently to the same table
 
 #### Character set and  Collation in database or table 
 
