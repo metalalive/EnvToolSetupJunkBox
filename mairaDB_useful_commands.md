@@ -1,6 +1,8 @@
 ----------------------------------------------------------------------
 
-### Useful commands for database management
+## Useful commands for database management
+
+### Basic
 
 ##### start MariaDB server:
 ```
@@ -129,7 +131,8 @@ Revoke certain type(s) of privileges that were granted to specific user.
 REVOKE ANY_VALID_PRIVILEGE_OPTIONS  ON `DATABASE_NAME`.`TABLE_NAME`  FROM  'DB_USERNAME'@'IP_OR_DOMAIN_NAME';
 ```
 
-##### [Query execution plan](https://mariadb.com/kb/en/explain/)
+### Statistic data
+#### [Query execution plan](https://mariadb.com/kb/en/explain/)
 To make sure your query is optimal and makes use of existing index(es), you can check the execution plan by :
 ```
 EXPLAIN <VALID_SQL_QUERY>;
@@ -148,7 +151,7 @@ EXPLAIN <VALID_SQL_QUERY>;
 
 ```
 
-##### List table size of a specific database in descending order
+#### List table size of a specific database in descending order
 ```
 SELECT table_name, ROUND(((data_length + index_length) / 1024), 2) `Size (KB)`\
     FROM information_schema.TABLES \
@@ -169,7 +172,18 @@ SELECT TABLE_NAME,COLUMN_NAME, REFERENCED_TABLE_NAME,REFERENCED_COLUMN_NAME \
      and REFERENCED_TABLE_NAME = 'table_name';
 ```
 
+#### List index datan
+To get metadata of an index from a InnoDB-based table, you can perform query on `mysql.innodb_index_stats`. For example, to get index size of a specific table, you have :
+```
+SELECT table_name, index_name, stat_name, stat_value, ROUND(stat_value * @@innodb_page_size / 1024, 2)\
+    size_in_kb FROM mysql.innodb_index_stats WHERE database_name = '<YOUR_DB_NAME>' AND \
+    table_name LIKE '%<YOUR_KEYWORD>%';
+```
+Note :
+* `@@innodb_page_size` means to read value from global variable  `innodb_page_size`, which defaults to 16 KB
+* `stat_name` could be `size` (total number of pages used in the entire index, remind that innodb use B-tree+ as index data structure) , or `n_leaf_pages` (total number of leaf pages for the index)
 
+### Misc.
 #### Create self-referencing table
 ```
 CREATE TABLE `your_table` (`id` integer AUTO_INCREMENT NOT NULL PRIMARY KEY, `parent_id` integer NULL);
