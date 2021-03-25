@@ -31,10 +31,58 @@ SELECT VERSION();
 SHOW DATABASES;
 ```
 
+##### List all storage engines available
+```
+SHOW ENGINES;
+```
+it will return the engine name, whether it supports transaction and savepoint
+
+##### Show global / per-session variables
+```
+SHOW VARIABLES LIKE '%<KEYWORD>%';
+SHOW SESSION VARIABLES LIKE '%<KEYWORD>%';
+```
+* it will show up current values applied to the global variables applied in the database server
+* for each database connection, the per-session variables default to this global variables if not specified.
+
+for example :
+```
+> SHOW VARIABLES LIKE '%auto%';
++------------------------------+-------+
+| Variable_name                | Value |
++------------------------------+-------+
+| auto_increment_increment     | 1     |
+| auto_increment_offset        | 1     |
+| autocommit                   | ON    |
+| automatic_sp_privileges      | ON    |
+| innodb_autoinc_lock_mode     | 1     |
+| innodb_stats_auto_recalc     | ON    |
+| sql_auto_is_null             | OFF   |
++------------------------------+-------+
+> SHOW SESSION VARIABLES LIKE '%iso%';
++---------------+-----------------+
+| Variable_name | Value           |
++---------------+-----------------+
+| tx_isolation  | REPEATABLE-READ |
++---------------+-----------------+
+```
+
 ##### switch to specific database
 ```
 USE <YOUR_DATABASE_NAME>;
 ```
+
+##### Show tables of a database
+Print names of all table. Note that you have to run `USE <YOUR_DATABASE_NAME>` prior to this command
+```
+SHOW TABLES
+```
+Query table status with conditions, e.g.
+```
+SHOW TABLE STATUS FROM <YOUR_DATABASE_NAME> WHERE NAME LIKE '%<KEYWORD>%';
+```
+it will return more detail that shows metadata of the tables, and columns e.g. `Name`, `Engine`, `Version`, `Row_format`, `Rows`, `Avg_row_length`, `Data_length`, `Max_data_length`, `Index_length`, `Data_free`, `Auto_increment` `Create_time`,  `Update_time`, `Check_time`, `Collation`, `Create_options`, `Max_index_length`,  `Temporary`
+
 
 ##### List all columns (and their attributes) of a database table
 ```
@@ -81,8 +129,24 @@ Revoke certain type(s) of privileges that were granted to specific user.
 REVOKE ANY_VALID_PRIVILEGE_OPTIONS  ON `DATABASE_NAME`.`TABLE_NAME`  FROM  'DB_USERNAME'@'IP_OR_DOMAIN_NAME';
 ```
 
+##### [Query execution plan](https://mariadb.com/kb/en/explain/)
+To make sure your query is optimal and makes use of existing index(es), you can check the execution plan by :
+```
+EXPLAIN <VALID_SQL_QUERY>;
+```
+* In mariadb `<VALID_SQL_QUERY>` has to be one of `SELECT`, `UPDATE`, `DELETE` statements.
+* the output of execution plan looks like following result table, the important columns are :
+  *  `key` column means whether to apply any key index (e.g. primary key, unique key, foreign key ... etc) when performing the given query at low-level storage engine implementation.
+  *  `key_len` column means size of each entry of the applied index. For example, when an index named `PRIMARY KEY` is applied to this query execution and the primary-key column is a 6-byte character, then the `key_len` is 6.
+  *  `rows` column means number of rows that will be generated in the result set
+```
++------+-------------+----------------------------+-------+---------------+---------+---------+------+------+-------------+
+| id   | select_type | table                      | type  | possible_keys | key     | key_len | ref  | rows | Extra       |
++------+-------------+----------------------------+-------+---------------+---------+---------+------+------+-------------+
+|    1 | SIMPLE      | <YOUR_DB_TABLE_NAME>       | range | PRIMARY       | PRIMARY | 6       | NULL |  125 | Using where |
++------+-------------+----------------------------+-------+---------------+---------+---------+------+------+-------------+
 
-
+```
 
 ##### List table size of a specific database in descending order
 ```
