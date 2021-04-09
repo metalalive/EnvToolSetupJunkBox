@@ -2,6 +2,8 @@ import sys
 import json
 import pdb
 import kombu
+from kombu.mixins import ConsumerMixin
+from kombu.pools import connections as KombuConnPoolDict, set_limit as kombu_pool_set_limit
 
 _data = {'myqueue': None, 'myexchange':None}
 
@@ -11,6 +13,39 @@ def _init(queue_name='usermgt_rpc3_rx' , exchange_name='usermgt_rpc3_rx', exchan
     # each queue could have multiple bindings, each of which is bound with different
     # routing key, so routing key doesn't have to be configured at here
     _data['myqueue']  = kombu.Queue(name=queue_name, exchange=_data['myexchange'])
+
+
+class TestConsumer(ConsumerMixin):
+    def __init__(self, conn, queue):
+        # get connection from pool
+        self.connection = conn
+        self.task_queue = queue
+
+    def get_consumers(self, consumer_cls, channel):
+        return [consumer_cls(queues=[self.task_queue],
+                         callbacks=[self.on_task])]
+
+    def on_task(self, body, message):
+        get_message(body=body, message=message)
+        self.should_stop = True
+
+def subscribe_ver2(auth_url, routing_key):
+    # Note that the kombu pool limits connections only at application level
+    # not OS thread / process level, so it might not be useful for web backend deployment
+    kombu_pool_set_limit(limit=1)
+    _data['myqueue'].routing_key = routing_key
+    # create kombu pool and acquire one connection
+    conn = kombu.Connection(auth_url)
+    target_pool = KombuConnPoolDict[conn]
+    # by uncommenting the line below, the second one will fail to acquire and raise
+    # kombu.exceptions.ConnectionLimitExceeded, since the number of connections in
+    # the pool is limited to one.
+    #_conn_0 = target_pool.acquire(block=False)
+    _conn   = target_pool.acquire(block=False)
+    # create consumer object for subscribing message
+    tc = TestConsumer(conn=_conn, queue=_data['myqueue'])
+    tc.run()
+
 
 def get_message(body, message):
     print("receive message: %s" % body)
@@ -53,8 +88,8 @@ def _publish_to_celery_consumer(auth_url, routing_key, headers=None, msg_payld=N
             'id':'1a862d39-7c1f-4645-8928-cbf3e9478c9f', 'content_type':'application/json',
             }
     # message payload to Celery consumer has to be serializable array of 3 items:
-    # array[0] : ??
-    # array[1] : args of the consumer task function, in general it should be a dictionary object
+    # array[0] : positional arguments
+    # array[1] : kwargs of the consumer task function, in general it should be a dictionary object
     # array[2] : metadata referenced by kombu library
     default_msg_payld = [[], {'account_id': 10, 'field_names':['id', 'first_name', 'last_name']},
             {'callbacks': None, 'errbacks': None, 'chain': None, 'chord': None}]
@@ -95,6 +130,11 @@ def main():
 
     if sys.argv[1] == 'subscribe':
         fn = subscribe
+        fn_kwargs.update({'auth_url':sys.argv[2], 'routing_key':sys.argv[3]})
+        init_kwargs = {'queue_name': sys.argv[4], 'exchange_name':sys.argv[5],
+                'exchange_type':sys.argv[6]}
+    elif sys.argv[1] == 'subscribe_v2':
+        fn = subscribe_ver2
         fn_kwargs.update({'auth_url':sys.argv[2], 'routing_key':sys.argv[3]})
         init_kwargs = {'queue_name': sys.argv[4], 'exchange_name':sys.argv[5],
                 'exchange_type':sys.argv[6]}
