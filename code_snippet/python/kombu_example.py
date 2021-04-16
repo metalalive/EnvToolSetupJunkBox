@@ -12,7 +12,10 @@ def _init(queue_name='usermgt_rpc3_rx' , exchange_name='usermgt_rpc3_rx', exchan
     _data['myexchange'] = kombu.Exchange(name=exchange_name, type=exchange_type, )
     # each queue could have multiple bindings, each of which is bound with different
     # routing key, so routing key doesn't have to be configured at here
-    _data['myqueue']  = kombu.Queue(name=queue_name, exchange=_data['myexchange'])
+    # Note
+    # exchange is given, empty routing key --> create binding with empty routing key
+    # routing key is given, without exchange --> binding will not be created
+    _data['myqueue']  = kombu.Queue(name=queue_name,  exclusive=False)
 
 
 class TestConsumer(ConsumerMixin):
@@ -112,13 +115,18 @@ def declare(auth_url, routing_key):
         bound_exchange.declare()
         bound_myq = _data['myqueue'](conn.default_channel)
         bound_myq.declare()
+        # multiple bindings with the same exchange but distinct routing keys can co-exist
         bind_q_ex = bound_myq.bind_to(exchange=bound_exchange.name , routing_key=routing_key)
+        bind_q_ex = bound_myq.bind_to(exchange=bound_exchange.name , routing_key='test_exact_route_key.#')
+        bind_q_ex = bound_myq.bind_to(exchange=bound_exchange.name , routing_key='test_exact_route_key.#') # idempotent
+        #pdb.set_trace()
 
 def delete(auth_url, routing_key):
     with kombu.Connection(auth_url) as conn:
         bound_exchange = _data['myexchange'](conn.default_channel)
         bound_myq = _data['myqueue'](conn.default_channel)
         bind_q_ex = bound_myq.unbind_from(exchange=bound_exchange, routing_key=routing_key)
+        bind_q_ex = bound_myq.unbind_from(exchange=bound_exchange, routing_key='test_exact_route_key.#')
         bound_exchange.delete()
         bound_myq.delete()
 
