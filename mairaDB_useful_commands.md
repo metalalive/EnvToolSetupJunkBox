@@ -125,6 +125,11 @@ Grant certain type(s) of privilege to specific database for specific user.
 ```
 GRANT  ANY_VALID_PRIVILEGE_OPTIONS  ON  `DATABASE_NAME`.`TABLE_NAME` TO 'DB_USERNAME'@'IP_OR_DOMAIN_NAME';
 ```
+For [column privilege](https://mariadb.com/kb/en/grant/#column-privileges), you need to add a list of column names wrapped by parenthesis between `SELECT` and `ON` keywords :
+```
+GRANT SELECT (`column_name_1`, `column_name_2`, `column_name_3`) ON `DATABASE_NAME`.`TABLE_NAME` TO 'DB_USERNAME'@'IP_OR_DOMAIN_NAME';
+```
+
 Note
 * `ANY_VALID_PRIVILEGE_OPTIONS` can be a list of valid privilege options, they depend on [privilege level](https://mariadb.com/kb/en/grant/#privilege-levels)
 * `TABLE_NAME` can also be wildcard character `*`, which means to grant the privileges to all tables under specific database :
