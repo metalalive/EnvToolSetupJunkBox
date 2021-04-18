@@ -120,6 +120,25 @@ SHOW GRANTS FOR  YOUR_USER_ACCOUNT@YOUR_HOSTNAME;
 ##### Create new user
 See [CREATE USER](https://mariadb.com/kb/en/create-user/)
 
+Quick example:
+```
+CREATE USER '<NEW_DB_ACCOUNT>'@'<NEW_DB_HOSTNAME>' IDENTIFIED BY '<YOUR_PASSWORD_PLAIN_TEXT>' \
+    WITH  MAX_USER_CONNECTIONS 5  MAX_QUERIES_PER_HOUR 7200;
+```
+
+##### Rename existing user
+```
+RENAME USER  '<OLD_DB_ACCOUNT>'@'<OLD_DB_HOSTNAME>' TO  '<NEW_DB_ACCOUNT>'@'<NEW_DB_HOSTNAME>';
+```
+
+##### modify user attributes
+Use [ALTER USER](https://mariadb.com/kb/en/alter-user/). Quick example:
+```
+ALTER USER  '<YOUR_DB_ACCOUNT>'@'<YOUR_DB_HOSTNAME>' IDENTIFIED BY '<NEW_PASSWORD_PLAIN_TEXT>' \
+    WITH MAX_CONNECTIONS_PER_HOUR 100 ;
+```
+
+
 ##### [Grant privilege](https://mariadb.com/kb/en/grant/)
 Grant certain type(s) of privilege to specific database for specific user.
 ```
