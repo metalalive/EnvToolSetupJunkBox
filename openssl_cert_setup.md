@@ -1,12 +1,17 @@
 ### Quick Note
 
-#### generate CA cert / private key
+#### generate CA cert / (RSA) private key
 ```
 openssl genrsa -out ca_priv_key.pem  2048
 
 openssl req -new -x509 -days 180 -key ca_priv_key.pem -keyform PEM -out ca_crt.pem -outform PEM -sha384
 
 openssl x509 -text -noout -in ca_crt.pem -inform PEM
+```
+
+#### generate RSA public key derived from any given RSA private key
+```
+openssl rsa  -in  ca_priv_key.pem  -outform PEM -pubout -out rsa_pubkey.pem
 ```
 
 #### generate server cert, sign it using CA cert 
