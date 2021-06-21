@@ -213,7 +213,9 @@ DROP INDEX `<VALID_INDEX_NAME>` ON `<YOUR_TABLE_NAME>`;
 Note :
 * the `<VALID_INDEX_NAME>` can be retrieved by `SHOW INDEX` command above or [listing index data](#list-index-data)
 * `<VALID_INDEX_NAME>` can also be ``PRIMARY`` in order to remove PRIMARY KEY index
-* the alternative to remove PRIMARY KEY index in mariadb is :
+* [`DROP INDEX`](https://mariadb.com/kb/en/drop-index/) is mapped to [`ALTER TABLE ... DROP INDEX ...`](https://mariadb.com/kb/en/alter-table/).
+
+The alternative to remove PRIMARY KEY index in mariadb is :
  ```
  ALTER TABLE <YOUR_TABLE_NAME> DROP PRIMARY KEY
  ```
