@@ -188,7 +188,7 @@ By checking the table schema, you should see both of `t1id` and `t2id` are marke
 | t2id       | int(4) unsigned  | NO   | PRI | NULL    |       |
 +------------+------------------+------+-----+---------+-------+
 ```
-Also the PRIMARY KEY index contains these 2 keys :
+The result set of the SQL statement above would be :
 ```
 > SHOW INDEX FROM <YOUR_TABLE_NAME>;
 -+------------------+------------+------------+--------------+-------------+-----------+-------------+----------+--------+------+------------+---------+
@@ -198,8 +198,9 @@ Also the PRIMARY KEY index contains these 2 keys :
 | <YOUR_TABLE_NAME> |          0 | PRIMARY    |            2 | t2id        | A         |           0 |     NULL | NULL   |      | BTREE      |         |
 +-------------------+------------+------------+--------------+-------------+-----------+-------------+----------+--------+------+------------+---------+
 ```
-which means :
-* each entry of the index contains 8-byte data, in the example above, upper 4-byte part is used to store for one column of the compound key (either `t1id` or `t2id`), lower 4-byte part is used to store for the other column.
+In the example above :
+* `key_name` column indicates a valid index `<VALID_INDEX_NAME>`, in `<YOUR_TABLE_NAME>` the index name is `PRIMARY` which is used by the PRIMARY KEY indexing and consists of 2 columns : `t1id` and `t2id`.
+* each entry of the index contains 8-byte data, upper 4-byte part is used to store for one column of the compound key (either `t1id` or `t2id`), lower 4-byte part is used to store for the other column.
 * One table may have more than one indexes, e.g. extra index for unique constraint, index for each foreign-key column (MySQL and MariaDB actually do so).
 * Number of indexes within a table has tradeoff, more indexes might (or might not, sometimes) speed up read operations, but slow down write operations  (especially insertions) because your database needs to maintain all existing indexes of the table on the single write.
 
@@ -208,8 +209,9 @@ In most cases you can simply delete an index without any error
 ```
 ALTER TABLE `<YOUR_TABLE_NAME>` DROP INDEX `<VALID_INDEX_NAME>`
 ```
+Note the `<VALID_INDEX_NAME>` can be retrieved by `SHOW INDEX` command above or [listing index data](#list-index-data)
 
-BUT if the compound-key index requires to reference a foreign key constraint, mysql / mariadb seems to internally do some magic and let the foreign key pointed to the index , so you will get the error below on `DROP INDEX` :
+In some cases the compound-key index may require to reference a foreign key constraint, however, **mysql / mariadb seems to internally do some magic and let the foreign key pointed to the index** , so you will get the following error on `DROP INDEX` :
 ```
 ERROR 1553 (HY000): Cannot drop index '<VALID_INDEX_NAME>': needed in a foreign key constraint
 ```
