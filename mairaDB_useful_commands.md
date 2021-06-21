@@ -204,13 +204,21 @@ In the example above :
 * One table may have more than one indexes, e.g. extra index for unique constraint, index for each foreign-key column (MySQL and MariaDB actually do so).
 * Number of indexes within a table has tradeoff, more indexes might (or might not, sometimes) speed up read operations, but slow down write operations  (especially insertions) because your database needs to maintain all existing indexes of the table on the single write.
 
-#### Drop compound-key index which includes foreign-key constraint
+#### Drop index
 In most cases you can simply delete an index without any error
 ```
 ALTER TABLE `<YOUR_TABLE_NAME>` DROP INDEX `<VALID_INDEX_NAME>`
+DROP INDEX `<VALID_INDEX_NAME>` ON `<YOUR_TABLE_NAME>`;
 ```
-Note the `<VALID_INDEX_NAME>` can be retrieved by `SHOW INDEX` command above or [listing index data](#list-index-data)
+Note :
+* the `<VALID_INDEX_NAME>` can be retrieved by `SHOW INDEX` command above or [listing index data](#list-index-data)
+* `<VALID_INDEX_NAME>` can also be ``PRIMARY`` in order to remove PRIMARY KEY index
+* the alternative to remove PRIMARY KEY index in mariadb is :
+ ```
+ ALTER TABLE <YOUR_TABLE_NAME> DROP PRIMARY KEY
+ ```
 
+#### Drop compound-key index which includes foreign-key constraint
 In some cases the compound-key index may require to reference a foreign key constraint, however, **mysql / mariadb seems to internally do some magic and let the foreign key pointed to the index** , so you will get the following error on `DROP INDEX` :
 ```
 ERROR 1553 (HY000): Cannot drop index '<VALID_INDEX_NAME>': needed in a foreign key constraint
@@ -231,6 +239,10 @@ See [here](https://stackoverflow.com/questions/63497147) for issue description
   ALTER TABLE `<YOUR_TABLE_NAME>` DROP INDEX `<YOUR_INDEX_NAME>`;
   ALTER TABLE `<YOUR_TABLE_NAME>` ENABLE KEYS;
   ```
+  
+*(TODO: what if we want to adjust the columns applied to the compound PRIMARY KEY ?)*
+
+
 
 ### Statistic data
 #### [Query execution plan](https://mariadb.com/kb/en/explain/)
