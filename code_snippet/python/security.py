@@ -1,3 +1,4 @@
+import random
 
 def birthday_sharing_prob(num_rounds=10000, maxval=365, num_ppl=23):
      collision_stat = {'yes':0, 'no': 0}
