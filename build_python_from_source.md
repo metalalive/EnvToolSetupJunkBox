@@ -9,9 +9,9 @@ sudo apt-get install -y build-essential tk-dev libncurses5-dev libncursesw5-dev 
              liblzma-dev zlib1g-dev libffi-dev tar wget vim
 ```
 
-* Download Python source code & Go to the downloaded Python source directory
+* Download [Python source code](https://github.com/python/cpython) & Go to the downloaded Python source directory
 
-* Configure everythin required (you may need root priviledge to do things). For those who built OpenSSL from source for whatever reasons, you better specify path of your openssl installation path, with `--with-openssl`, `CFLAGS` and `LDFLAGS` options when running `./configure` below:
+* Configure everything required (you may need root priviledge to do things). For those who built OpenSSL from source for whatever reasons, you better specify path of your openssl installation path, with `--with-openssl`, `CFLAGS` and `LDFLAGS` options when running `./configure` below:
 
 ```
 ./configure  --with-openssl=/PATH/TO/YOUR/OPENSSL_INSTALL_FODLER/ \
@@ -21,7 +21,7 @@ sudo apt-get install -y build-essential tk-dev libncurses5-dev libncursesw5-dev 
     LDFLAGS="-L/PATH/TO/YOUR/OPENSSL_INSTALL_FODLER/"
 ```
 
-* Recheck `config.log`. For those who built OpenSSL from source, make sure you get following results :
+* Check out `config.log`. For those who built OpenSSL from source, make sure you get following results :
 ```
 configure:xxxxx: checking for openssl/ssl.h in /PATH/TO/YOUR/OPENSSL_INSTALL_FODLER/
 configure:xxxxx: result: yes
@@ -29,6 +29,13 @@ configure:xxxxx: checking whether compiling and linking against OpenSSL works
 configure:xxxxx: result: yes
 configure:xxxxx: checking for X509_VERIFY_PARAM_set1_host in libssl
 configure:xxxxx: result: yes
+```
+for newer version, the log may look like this :
+```
+checking for openssl/ssl.h in /PATH/TO/YOUR/OPENSSL_INSTALL_FODLER/ ... yes
+checking whether compiling and linking against OpenSSL works... yes
+checking for X509_VERIFY_PARAM_set1_host in libssl... yes
+checking for --with-ssl-default-suites... openssl
 ```
 
 * start building
