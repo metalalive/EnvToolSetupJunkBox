@@ -9,7 +9,7 @@ sudo apt-get install -y build-essential tk-dev libncurses5-dev libncursesw5-dev 
              liblzma-dev zlib1g-dev libffi-dev tar wget vim
 ```
 
-* Download [Python source code](https://github.com/python/cpython) & Go to the downloaded Python source directory
+* Download [Python source code](https://github.com/python/cpython) & Go to the downloaded Python source directory. **Please avoid ALPHA release or BETA release , always use FINAL release instead, you will save a lot of time**
 
 * Configure everything required (you may need root priviledge to do things). For those who built OpenSSL from source for whatever reasons, you better specify path of your openssl installation path, with `--with-openssl`, `CFLAGS` and `LDFLAGS` options when running `./configure` below:
 
@@ -63,7 +63,7 @@ Type "help", "copyright", "credits" or "license" for more information.
 >>> 
 ```
 
-
+#### PIP
 * Now install or upgrade `pip` for newly built python3.9 (you may need root priviledge to do this)
 ```
 ./python -m ensurepip --default-pip // first time to install
@@ -74,7 +74,7 @@ Type "help", "copyright", "credits" or "license" for more information.
 
 * Recheck `pip` version by running `./python -m pip --version`, you should see result like this (pip version might be different in your case):
 ```
-pip 20.0.2 from /usr/local/lib/python3.9/site-packages/pip (python 3.9)
+pip 21.1.3 from /usr/local/lib/python3.9/site-packages/pip (python 3.9)
 ```
 
 * Tty install whatever packages you need using `pip` (example below), For those who built openssl from source, recheck the execution result, you should see download progress of the packages.  
