@@ -69,6 +69,23 @@ for example :
 +---------------+-----------------+
 ```
 
+##### [Show status](https://mariadb.com/kb/en/show-status/)
+provide  status information on an active server
+```
+SHOW STATUS WHERE variable_name = '<VALID_VARIABLE_NAME>';
+```
+
+for exmeple, to check number of running threads (created connections) in the database server , you have :
+```
+SHOW STATUS WHERE variable_name = 'threads_connected';
+
++-------------------+-------+
+| Variable_name     | Value |
++-------------------+-------+
+| Threads_connected | 13    |
++-------------------+-------+
+```
+
 ##### switch to specific database
 ```
 USE <YOUR_DATABASE_NAME>;
@@ -305,6 +322,23 @@ SELECT INDEX_NAME, PAGE_NUMBER, NUMBER_RECORDS, DATA_SIZE, PAGE_STATE, PAGE_TYPE
 ```
 * `NUMBER_RECORDS` The number of records within the page.
 * `DATA_SIZE` The sum of the sizes of the records. This column is applicable only to pages with a `PAGE_TYPE` value of `INDEX`. 
+
+#### Show [process list](https://mariadb.com/kb/en/show-processlist/)
+This command shows you which threads are running, can be used to check connection issues. You can also get the information from [`information_schema.PROCESSLIST` table](https://mariadb.com/kb/en/information-schema-processlist-table/)
+
+```
+SHOW PROCESSLIST ;
+MariaDB [Restaurant]> show processlist ;
++-------+-----------------+-----------------+------------+---------+------+--------------------------+------------------+----------+
+| Id    | User            | Host            | db         | Command | Time | State                    | Info             | Progress |
++-------+-----------------+-----------------+------------+---------+------+--------------------------+------------------+----------+
+|     2 | system user     |                 | NULL       | Daemon  | NULL | InnoDB purge worker      | NULL             |    0.000 |
+|     1 | system user     |                 | NULL       | Daemon  | NULL | InnoDB purge coordinator | NULL             |    0.000 |
+| 10567 | root            | localhost       | Restaurant | Query   |    0 | Init                     | show processlist |    0.000 |
+| 10826 | app_admin       | localhost:40428 | Restaurant | Sleep   | 1630 |                          | NULL             |    0.000 |
++-------+-----------------+-----------------+------------+---------+------+--------------------------+------------------+----------+
+
+```
 
 
 ### Misc.
