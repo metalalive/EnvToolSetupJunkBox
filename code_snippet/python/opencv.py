@@ -29,14 +29,14 @@ def gen_img_thumbnail(src, new_height, new_width, pos_y=0, pos_x=0):
     return cv2.resize(cropped, (new_width, new_height), interpolation=cv2.INTER_AREA)
 
   
-def test_gen_img_thumbnail(origin_filepath, codec_ext):
+def test_gen_img_thumbnail(origin_filepath, codec_ext, height, width, pos_y=0, pos_x=0):
     origin_np = None
     with open(origin_filepath) as origin_file: # TODO, what if it is a huge file ?
         origin_np     = numpy.frombuffer(origin_file.read(), dtype=numpy.uint8)
     if origin_np:
         origin_img    = cv2.imdecode(origin_np, flags=cv2.IMREAD_COLOR)
         thumbnail_img = gen_img_thumbnail(src=origin_img, new_height=height, \
-                                          new_width=width, pos_y=0, pos_x=0)
+                                          new_width=width, pos_y=pos_y, pos_x=pos_x)
         # `encoded` should be 1-D numpy array
         result, encoded = cv2.imencode('.%s' % codec_ext, thumbnail_img)
         processed_file = tempfile.SpooledTemporaryFile(max_size=2048)
