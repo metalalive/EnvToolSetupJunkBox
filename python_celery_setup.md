@@ -135,7 +135,7 @@ note that :
 
 ##### Background
 
-Use `start-stop-daemon` utility, it is convinient for unprivileged users who needs to run daemon processes. Celery 5.0 introduces `celery multi start/stop`, which doesn't work as expected, (in my case, celery workers daemon are NOT really created after running this command, it seems that nobody on any online community faced such issue)
+Use [`start-stop-daemon`](https://man7.org/linux/man-pages/man8/start-stop-daemon.8.html) utility, it is convinient for unprivileged users who needs to run daemon processes. Celery 5.0 introduces `celery multi start/stop`, which doesn't work as expected, (in my case, celery workers daemon are NOT really created after running this command, it seems that nobody on any online community faced such issue)
 
 Assume project path is at `<PATH/TO/YOUR/PROJ>/proj123`
 
