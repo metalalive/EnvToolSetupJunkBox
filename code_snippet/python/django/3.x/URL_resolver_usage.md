@@ -11,7 +11,7 @@ urlpatterns = [
 ```
 
 * in `your_app/urls/productmgt.py`
-```
+```python
 from django.urls import  path
 from your_app.views import ProductAttrTypeProxyView, FabricationIngredientProxyView
 app_name = 'productmgt'
@@ -67,7 +67,7 @@ resolvers[0].reverse('FabricationIngredientProxyView0')
 
 
 #### [iterate all valid URL patterns](https://stackoverflow.com/a/1275601/9853105)
-```
+```python
 from django.urls.resolvers import URLResolver
 from your_app.urls import urlpatterns
 resolvers = filter(lambda path: isinstance(path, URLResolver), urlpatterns)
