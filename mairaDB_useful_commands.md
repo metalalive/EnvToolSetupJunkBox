@@ -221,6 +221,14 @@ In the example above :
 * One table may have more than one indexes, e.g. extra index for unique constraint, index for each foreign-key column (MySQL and MariaDB actually do so).
 * Number of indexes within a table has tradeoff, more indexes might (or might not, sometimes) speed up read operations, but slow down write operations  (especially insertions) because your database needs to maintain all existing indexes of the table on the single write.
 
+#### List all constraints from other tables referneced to a given table
+```
+SELECT table_name, column_name, constraint_name, referenced_table_name, referenced_column_name  \
+    FROM `information_schema`.`key_column_usage`  WHERE  referenced_table_schema  = '<YOUR_DATABASE_NAME>' \
+    AND referenced_table_name = '<YOUR_REFERENCED_TABLE_NAME>';
+```
+where `constraint_name` can be used as `<VALID_INDEX_NAME>` in `DROP INDEX` command (as shown below)
+
 #### Drop index
 In most cases you can simply delete an index without any error
 ```
