@@ -185,6 +185,9 @@ Revoke certain type(s) of privileges that were granted to specific user.
 REVOKE ANY_VALID_PRIVILEGE_OPTIONS  ON `DATABASE_NAME`.`TABLE_NAME`  FROM  'DB_USERNAME'@'IP_OR_DOMAIN_NAME';
 ```
 
+
+-------------------------------------------------------------------------------------------
+
 ### Index
 #### Show all indexes of a table
 ```
@@ -229,6 +232,18 @@ SELECT table_name, column_name, constraint_name, referenced_table_name, referenc
 ```
 where `constraint_name` can be used as `<VALID_INDEX_NAME>` in `DROP INDEX` command (as shown below)
 
+
+#### Add Primary Key Index
+To add  new primary key to existing table (auto-increment attribute is optional) :
+```SQL
+ALTER TABLE  `<YOUR_TABLE_NAME>` ADD COLUMN `<NEW_COLUMN_NAME>` int NOT NULL AUTO_INCREMENT PRIMARY KEY
+```
+
+For BLOB/TEXT column, you have to specify first N bytes/chars to be in the primary key index :
+```SQL
+ALTER TABLE `<YOUR_TABLE_NAME>` ADD PRIMARY KEY (<VALID_COLUMN_NAME>(<YOUR_FIRST_N_BYTES>))
+```
+
 #### Drop index
 In most cases you can simply delete an index without any error
 ```
@@ -240,10 +255,26 @@ Note :
 * `<VALID_INDEX_NAME>` can also be ``PRIMARY`` in order to remove PRIMARY KEY index
 * [`DROP INDEX`](https://mariadb.com/kb/en/drop-index/) is mapped to [`ALTER TABLE ... DROP INDEX ...`](https://mariadb.com/kb/en/alter-table/).
 
-The alternative to remove PRIMARY KEY index in mariadb is :
- ```
+For primary key, The alternative to remove `PRIMARY KEY index` in mariadb is :
+ ```SQL
  ALTER TABLE <YOUR_TABLE_NAME> DROP PRIMARY KEY
  ```
+
+If the primary key is auto-increment column, you will get error like :
+```
+ERROR 1075 (42000): Incorrect table definition; there can be only one auto column and it must be defined as a key
+```
+In this case, you should first drop the primary key **without** removing the column :
+```SQL
+ ALTER TABLE <YOUR_TABLE_NAME> MODIFY COLUMN `id` int NOT NULL, DROP PRIMARY KEY;
+```
+assume the `id` column has auto-increment property, you have to remove the primary key first , then drop the column `id` using another SQL statement :
+```SQL
+ ALTER TABLE <YOUR_TABLE_NAME> DROP COLUMN id;
+```
+ The 2 statements above cannot be combined into one, which is strange.
+
+
 
 #### Drop compound-key index which includes foreign-key constraint
 In some cases the compound-key index may require to reference a foreign key constraint, however, **mysql / mariadb seems to internally do some magic and let the foreign key pointed to the index** , so you will get the following error on `DROP INDEX` :
