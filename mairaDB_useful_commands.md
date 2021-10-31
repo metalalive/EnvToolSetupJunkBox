@@ -167,7 +167,7 @@ GRANT SELECT (`column_name_1`, `column_name_2`, `column_name_3`) ON `DATABASE_NA
 ```
 
 Note
-* `ANY_VALID_PRIVILEGE_OPTIONS` can be a list of valid privilege options, they depend on [privilege level](https://mariadb.com/kb/en/grant/#privilege-levels)
+* `ANY_VALID_PRIVILEGE_OPTIONS` can be a list of valid privilege options, they depend on [privilege level](https://mariadb.com/kb/en/grant/#privilege-levels) , such as `INSERT`, `DELETE`, `CREATE`, `DROP`, `GRANT OPTION` ... etc
 * `TABLE_NAME` can also be wildcard character `*`, which means to grant the privileges to all tables under specific database :
   ```
   `DATABASE_NAME`.*
