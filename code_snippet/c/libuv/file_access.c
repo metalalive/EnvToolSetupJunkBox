@@ -112,7 +112,8 @@ int main(int argc, char *argv[]) {
     result = uv_fs_open(loop, &src_req, src_path, O_RDONLY, 0, on_open);
     assert(result == 0);
     int flags = O_WRONLY | O_CREAT;
-    result = uv_fs_open(loop, &dst_req, dst_path, flags, 0, on_open);
+    int mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP;
+    result = uv_fs_open(loop, &dst_req, dst_path, flags, mode, on_open);
     assert(result == 0);
 
     uv_run(loop, UV_RUN_DEFAULT);
