@@ -65,5 +65,8 @@ ENDIF (PKG_CONFIG_FOUND)
 SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g")
 # should be set after link_directory() command
 ADD_EXECUTABLE(file_access.out file_access.c)
+ADD_EXECUTABLE(pipe_stream.out pipe_stream.c)
+
 TARGET_LINK_LIBRARIES(file_access.out ${LIBUV_LIBRARIES})
+TARGET_LINK_LIBRARIES(pipe_stream.out ${LIBUV_LIBRARIES})
 
