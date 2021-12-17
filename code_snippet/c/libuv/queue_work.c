@@ -57,6 +57,8 @@ static void sig_int_handler(uv_signal_t *req, int signum) {
     fprintf(stdout, "Signal received (%d) \n", signum);
     int idx = 0;
     sig_ctx_t  *ctx = (sig_ctx_t *)req->data;
+    // TODO, figure out why not all pending requests are cancelled successfully,
+    //  also figure out why memory leak happens to the requests.
     for(idx = 0; idx < ctx->num; idx++) {
         uv_work_t curr_req = ctx->reqs[idx];
         uv_cancel((uv_req_t *)&curr_req);
