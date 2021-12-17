@@ -62,14 +62,21 @@ ENDIF (PKG_CONFIG_FOUND)
 #MESSAGE("check out LIBUV_LIBRARIES ${LIBUV_LIBRARIES}")
 
 # add debug info to executable
-SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g")
+SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -O0")
 # should be set after link_directory() command
 ADD_EXECUTABLE(file_access.out file_access.c)
 ADD_EXECUTABLE(pipe_stream.out pipe_stream.c)
 ADD_EXECUTABLE(tcp_echo_server.out  tcp_echo_server.c)
 ADD_EXECUTABLE(tcp_echo_client.out  tcp_echo_client.c)
+ADD_EXECUTABLE(rwlock.out  rwlock.c)
+ADD_EXECUTABLE(queue_work.out   queue_work.c)
+ADD_EXECUTABLE(progress.out     progress.c)
 
 TARGET_LINK_LIBRARIES(file_access.out ${LIBUV_LIBRARIES})
 TARGET_LINK_LIBRARIES(pipe_stream.out ${LIBUV_LIBRARIES})
 TARGET_LINK_LIBRARIES(tcp_echo_server.out ${LIBUV_LIBRARIES})
 TARGET_LINK_LIBRARIES(tcp_echo_client.out ${LIBUV_LIBRARIES})
+TARGET_LINK_LIBRARIES(rwlock.out ${LIBUV_LIBRARIES})
+TARGET_LINK_LIBRARIES(queue_work.out   ${LIBUV_LIBRARIES})
+TARGET_LINK_LIBRARIES(progress.out ${LIBUV_LIBRARIES})
+
