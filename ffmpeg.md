@@ -18,6 +18,12 @@ make install
 * compilation takes about 30 minutes depending on your environment
 * After `make install` , all essential files (e.g. headers, libraries, pkg-config files ... etc) are in `/PATH/TO/FFMPEG_REPO_HOME/installed`
 
+To test `ffmpeg` command :
+```
+LD_LIBRARY_PATH="/PATH/TO/FFMPEG_REPO_HOME/installed/lib"  /PATH/TO/FFMPEG_REPO_HOME/installed/bin/ffmpeg --help
+```
+
+
 #### Reference
 * [ffmpeg command usage & concept explanation](https://ffmpeg.org/ffmpeg.html)
 * [API documentation for different versions](https://ffmpeg.org/documentation.html), Code examples are provided in the API documentation of each version
