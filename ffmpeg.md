@@ -1,14 +1,16 @@
 
 #### Build from source
-```
+```shell
 cd /PATH/TO/FFMPEG_REPO_HOME
 
 mkdir -p installed
 
-./configure --prefix=/PATH/TO/FFMPEG_REPO_HOME/installed --enable-libx264 --enable-libx265 \
-        --enable-libfdk-aac  --enable-gnutls --enable-gpl --enable-nonfree --enable-shared --disable-static
+LD_LIBRARY_PATH="$LD_LIBRARY_PATH:/PATH/TO/NETTLE_LIB_DIR:/PATH/TO/P11-KIT_LIB_DIR" \
+    PKG_CONFIG_PATH="/PATH/TO/GNUTLS_PKG_CONFIG_DIR:/PATH/TO/NETTLE_PKG_CONFIG_DIR:/usr/lib/x86_64-linux-gnu/pkgconfig" \
+    ./configure --prefix=/PATH/TO/FFMPEG_INSTALLED_DIR --enable-libx264 --enable-libx265 \
+    --enable-libfdk-aac  --enable-gnutls --enable-gpl --enable-nonfree --enable-shared --disable-static
 
-make
+LD_LIBRARY_PATH="$LD_LIBRARY_PATH:/PATH/TO/GNUTLS_LIB_DIR:/PATH/TO/NETTLE_LIB_DIR:/PATH/TO/P11-KIT_LIB_DIR"   make
 
 make install
 ```
@@ -20,7 +22,8 @@ make install
 
 To test `ffmpeg` command :
 ```
-LD_LIBRARY_PATH="/PATH/TO/FFMPEG_REPO_HOME/installed/lib"  /PATH/TO/FFMPEG_REPO_HOME/installed/bin/ffmpeg --help
+LD_LIBRARY_PATH="/PATH/TO/FFMPEG_INSTALLED_DIR/lib:/PATH/TO/GNUTLS_LIB_DIR:/PATH/TO/NETTLE_LIB_DIR:/PATH/TO/P11-KIT_LIB_DIR" \
+    /PATH/TO/FFMPEG_INSTALLED_DIR/bin/ffmpeg --help
 ```
 
 
