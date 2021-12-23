@@ -22,7 +22,7 @@ make install
 ```
 **NOTE**
 * Documentation generation requires [texlive](https://github.com/TeX-Live) which consumes lots of disk space
-* `--enable-mini-gmp` tells `nettle` to generate accompanied library **hogweed** (with flag `-lhogweed` at linking stage), which is required for later build process in [GnuTLS](.#gnutls)
+* `--enable-mini-gmp` tells `nettle` to generate accompanied library **hogweed** (with flag `-lhogweed` at linking stage), which is required for later build process in [GnuTLS](./rhonabwy.md#gnutls)
 * it is optional to compile code examples, you can skip it by modifying `all` target in `/PATH/TO/NETTLE/SRC_DIR/examples/Makefile.in`
 
 
@@ -45,7 +45,7 @@ meson install -C _build
 * it might not be necessary to use [`gettext`](https://packages.ubuntu.com/search?keywords=gettext) version 0.19 , you can downgrade `gettext` to version 0.18 by modifying `/PATH/TO/P11-KIT/SRC_DIR/configure.ac`
 
 **to-do**
-`p11-kit-trust.sh` test failed in [GnuTLS](.#gnutls) build process because it requires this package to generate `p11-kit-trust.so`, which is missing for unknown reason ?
+`p11-kit-trust.sh` test failed in [GnuTLS](./rhonabwy.md#gnutls) build process because it requires this package to generate `p11-kit-trust.so`, which is missing for unknown reason ?
 
 
 ##### [GnuTLS](#gnutls)
