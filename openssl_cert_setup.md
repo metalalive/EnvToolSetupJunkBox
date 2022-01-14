@@ -38,6 +38,14 @@ openssl x509 -req -in server_csr.pem -extfile /usr/local/ssl/openssl.cnf -extens
 openssl x509 -text -noout -in server_crt.pem -inform PEM
 ```
 
+#### Verify the certicate signed by the CA
+```
+openssl verify -verbose -CAfile /PATH/TO/ca.crt  /PATH/TO/whatever_cert_to_test.crt 
+```
+You should see the result if it is verified successfully
+```
+> /PATH/TO/whatever_cert_to_test.crt: OK
+```
 
 
 #### for extracting signature bit string 
@@ -58,5 +66,4 @@ openssl rsautl -verify -inkey ca_pubkey_test.pem -in ca_crt_test_sig.bin  -pubin
 
 xxd ca_crt_test_sig_decrypted.bin
 ```
-
 
