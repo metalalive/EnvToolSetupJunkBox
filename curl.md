@@ -1,6 +1,6 @@
 
 #### HTTP/2 in cURL
-To support [http/2](https://datatracker.ietf.org/doc/html/rfc7540) , [curl](https://github.com/curl/curl) actually replies on a third-party library called [nghttp2](https://github.com/nghttp2/nghttp2) , without installation of `nghttp2` , the command `curl --http2 THE_URL_TO_TEST` will silently downgrade to http/1.1 (add `-v` for printing verbose), which is difficult to debug. See [the article](https://curl.se/docs/http2.html) for detail.
+To support [http/2](https://datatracker.ietf.org/doc/html/rfc7540) , [curl](https://github.com/curl/curl) actually relies on a third-party library named [nghttp2](https://github.com/nghttp2/nghttp2) , without installation of `nghttp2` , the command `curl --http2 THE_URL_TO_TEST` will silently downgrade to http/1.1 (add `-v` for printing verbose), which is difficult to debug. See [the article](https://curl.se/docs/http2.html) for detail.
 
 #### Build nghttp2 from source
 ```
