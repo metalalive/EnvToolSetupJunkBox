@@ -1,16 +1,45 @@
-#### Build from source
 
+#### HTTP/2 in cURL
+To support [http/2](https://datatracker.ietf.org/doc/html/rfc7540) , [curl](https://github.com/curl/curl) actually replies on a third-party library called [nghttp2](https://github.com/nghttp2/nghttp2) , without installation of `nghttp2` , the command `curl --http2 THE_URL_TO_TEST` will silently downgrade to http/1.1 (add `-v` for printing verbose), which is difficult to debug. See [the article](https://curl.se/docs/http2.html) for detail.
+
+#### Build nghttp2 from source
 ```
-./buildconf
-./configure
+CC="/PATH/TO/bin/gcc"  CXX="/PATH/TO/bin/g++"  PKG_CONFIG_PATH=""  cmake   -DENABLE_LIB_ONLY=ON  ..
 make
 sudo make install
 ```
-the built library should be at `/usr/local/lib/libcurl.so` , `/usr/local/lib/libcurl.so.4.6.0`
+Note that `CMakeLists.txt` in [curl](https://github.com/curl/curl) looks for `libnghttp2.so` only by the command `find_package(xxx)` , but `nghttp2` actually provides useful [pkg-config metadata file](https://en.wikipedia.org/wiki/Pkg-config) that is NOT used in `curl` build process.... 
+
+#### Build curl from source
+##### Configure by `./configure` shell script
+```
+./buildconf
+./configure
+```
+##### Configure by Cmake script
+```
+CC="/PATH/TO/bin/gcc"  CXX="/PATH/TO/bin/g++"  PKG_CONFIG_PATH=""  cmake -DCMAKE_INSTALL_PREFIX="/PATH/TO/installed"  -DBUILD_SHARED_LIBS=ON -DCURL_DISABLE_DICT=ON  -DCURL_DISABLE_FTP=ON  -DCURL_DISABLE_TFTP=ON  -DCURL_DISABLE_POP3=ON  -DCURL_DISABLE_GOPHER=ON  -DUSE_NGHTTP2=ON  ..
+```
+You can further disable number of features unecessary in your applications , check out `CMakeLists.txt` for detail.
+
+then build
+```
+make
+make install
+```
+the built library should be at `/PATH/TO/installed`. (defaults to `/usr/local/lib/libcurl.so`)
+
 
 #### Usage
+* example #1
 ```
-curl --cacert /PATH/TO/CA_CERT_FILE  --key /PATH/TO/PRIVATE_KEY_FILE  \
+LD_LIBRARY_PATH="/PATH/TO/installed/lib" /PATH/TO/installed/bin/curl --version
+```
+
+* example #2
+```
+LD_LIBRARY_PATH="/PATH/TO/installed/lib" /PATH/TO/installed/bin/curl  \
+ --cacert /PATH/TO/CA_CERT_FILE  --key /PATH/TO/PRIVATE_KEY_FILE  \
     --request POST --http2 \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
