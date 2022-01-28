@@ -28,8 +28,8 @@ LD_LIBRARY_PATH="/PATH/TO/FFMPEG_INSTALLED_DIR/lib:/PATH/TO/GNUTLS_LIB_DIR:/PATH
 ```
 *  `<OPTIONAL_MORE_DETAIL>` indicates that more detail can be dumped to terminal, which could be `--help long` or `--help full` (dump all detail used in codec settings)
 
-#### Streaming test
-* streaming given video file to network protocol (in this example, UDP and h264 codec)
+#### Live Streaming test
+* streaming given video file (or address to webcam) to network protocol (in this example, UDP and h264 codec)
 ```
 LD_LIBRARY_PATH="/PATH/TO/FFMPEG_INSTALLED_DIR/lib:/PATH/TO/GNUTLS_LIB_DIR:/PATH/TO/NETTLE_LIB_DIR:/PATH/TO/P11-KIT_LIB_DIR" \
     /PATH/TO/FFMPEG_INSTALLED_DIR/bin/ffmpeg -re  -i /PATH/TO/VIDEO_FILE -v 24  -c:v libx264 -c:a aac  -f mpegts   udp://127.0.0.1:12345
@@ -37,6 +37,7 @@ LD_LIBRARY_PATH="/PATH/TO/FFMPEG_INSTALLED_DIR/lib:/PATH/TO/GNUTLS_LIB_DIR:/PATH
 * `-v 24`  sets logging level to warning/error/fatal
 * `-c:v` , `-c:a` depends on what video/audio codec supported in your ffmpeg build (if compile from source)
 * `-f` may depend on format of input file (?)
+* the streaming process  terminates as soon as it reaches end of frames.
 
 * open another video player that supports streaming video
 ```
@@ -46,6 +47,7 @@ or
 ```
 avplay udp://127.0.0.1:12345
 ```
+* the player won't start playing from the beginning once it is reopened.
 
 #### Generate media segments for HLS protocol (HTTP Live Streaming)
 
