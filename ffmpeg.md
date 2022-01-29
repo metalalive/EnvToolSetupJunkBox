@@ -1,3 +1,4 @@
+Version : 4.3.3
 
 ### Build from source
 ```shell
@@ -50,6 +51,7 @@ avplay udp://127.0.0.1:12345
 * the player won't start playing from the beginning once it is reopened.
 
 #### HTTP Live Streaming
+##### Single Audio/Video stream
 Given video file in local disk, generate playlist and corresponding media segments which are compliant with [HLS protocol](https://datatracker.ietf.org/doc/html/rfc8216) 
 ```
 LD_LIBRARY_PATH="/PATH/TO/FFMPEG_INSTALLED_DIR/lib:/PATH/TO/GNUTLS_LIB_DIR:/PATH/TO/NETTLE_LIB_DIR:/PATH/TO/P11-KIT_LIB_DIR" \
@@ -84,6 +86,31 @@ After the `ffmpeg` command above, you can host all the output files on HTTP serv
 </script>
 </body>
 </html>
+```
+##### Variant Audio/Video streams
+The following example sets 2 variant streams , each of which has different resolutions (apply `scale` in `-filter`), video/audio bitrates: 
+```
+LD_LIBRARY_PATH="/PATH/TO/FFMPEG_INSTALLED_DIR/lib:/PATH/TO/GNUTLS_LIB_DIR:/PATH/TO/NETTLE_LIB_DIR:/PATH/TO/P11-KIT_LIB_DIR" \
+    /PATH/TO/FFMPEG_INSTALLED_DIR/bin/ffmpeg   -i  /PATH/TO/YOUR/VIDEO_FILE -v 24 -c:v libx264 -preset slow \
+    -c:a:0 aac  -c:a:1 aac \
+    -filter:v:0 "scale=640:-1"  -filter:v:1 "scale=320:-1" \
+    -b:v:0 144k -b:v:1 64k \
+    -b:a:0 96k  -b:a:1 32k \
+    -map 0:v:0 -map 0:a:0 \
+    -map 0:v:0 -map 0:a:0 \
+    -f hls -hls_time 17 -hls_list_size 1 -var_stream_map "v:0,a:0 v:1,a:1" \
+    -hls_segment_filename "./hls_test/vs%v/data%03d.m4s" \
+    -hls_playlist_type vod -hls_segment_type fmp4  \
+    ./hls_test/vs%v/stream.m3u8
+```
+* `-hls_segment_filename` specify number of variants in final output, the example above shows 2 pairs `v:0,a:0` and `v:1,a:1` which means 2 variants , will generate 2 playlists `./hls_test/vs0/stream.m3u8` and `./hls_test/vs1/stream.m3u8` (On running the command successfully), each playlist has its own set of media segment files
+* `-hls_segment_filename` has to be specified with `-hls_segment_filename` , and `%v` (index for each variant) must be given to final file path.
+
+
+#### Dump properties of a media file
+```
+LD_LIBRARY_PATH="/PATH/TO/FFMPEG_INSTALLED_DIR/lib:/PATH/TO/GNUTLS_LIB_DIR:/PATH/TO/NETTLE_LIB_DIR:/PATH/TO/P11-KIT_LIB_DIR" \
+    /PATH/TO/FFMPEG_INSTALLED_DIR/bin/ffprobe  "/PATH/TO/YOUR/VIDEO_FILE"
 ```
 
 
