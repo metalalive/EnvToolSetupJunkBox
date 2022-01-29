@@ -63,7 +63,7 @@ LD_LIBRARY_PATH="/PATH/TO/FFMPEG_INSTALLED_DIR/lib:/PATH/TO/GNUTLS_LIB_DIR:/PATH
 * the input file can also have multiple video streams (possible usage scenario could be to provide different resolution and bitrate for different network speed)
 * File name and URL pattern of each media segment can be changed via `-hls_segment_filename` and `-hls_base_url` option respectively.
 
-After the command, you can host all the output files on HTTP server and test them with video player in a HTML file (see the sample below, also hosted on the same server) . Note that [`hls.js`](https://github.com/video-dev/hls.js/) in the HTML sample can be copied from [the CDN server](https://cdn.jsdelivr.net/npm/hls.js@latest)
+After the `ffmpeg` command above, you can host all the output files on HTTP server and test them with video player in a HTML file (see the sample below, also hosted on the same server) . Note that [`hls.js`](https://github.com/video-dev/hls.js/) in the HTML sample can be copied from [the CDN server](https://cdn.jsdelivr.net/npm/hls.js@latest)
 ```html
 <!DOCTYPE html>
 <html>
