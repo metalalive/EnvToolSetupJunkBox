@@ -219,9 +219,10 @@ The result set of the SQL statement above would be :
 +-------------------+------------+------------+--------------+-------------+-----------+-------------+----------+--------+------+------------+---------+
 ```
 In the example above :
-* `key_name` column indicates a valid index `<VALID_INDEX_NAME>`, in `<YOUR_TABLE_NAME>` the index name is `PRIMARY` which is used by the PRIMARY KEY indexing and consists of 2 columns : `t1id` and `t2id`.
+* `key_name` indicates a valid index `<VALID_INDEX_NAME>`, in `<YOUR_TABLE_NAME>` the index name is `PRIMARY` which is used by the PRIMARY KEY indexing and consists of 2 columns : `t1id` and `t2id`.
+* `Seq_in_index` indicates the ordering of the columns `t1id` and `t2id` in the [multiple-part index](https://dev.mysql.com/doc/refman/5.7/en/range-optimization.html#range-access-multi-part)  named `PRIMARY`, that shows how InnoDB organizes the compound key in its internal storage structure (typically B-tree). This provides advantages when you can only provide part of key column(s) (not all of them, e.g. only provide `t1id` in WHERE clause) in the SQL statement, so each record can be found and still using the `PRIMARY` index  (without full table scan). 
 * each entry of the index contains 8-byte data, upper 4-byte part is used to store for one column of the compound key (either `t1id` or `t2id`), lower 4-byte part is used to store for the other column.
-* One table may have more than one indexes, e.g. extra index for unique constraint, index for each foreign-key column (MySQL and MariaDB actually do so).
+* One table may have more than one indexes, e.g. extra index for unique constraint, index for each foreign-key column (MySQL and MariaDB actually do so by default).
 * Number of indexes within a table has tradeoff, more indexes might (or might not, sometimes) speed up read operations, but slow down write operations  (especially insertions) because your database needs to maintain all existing indexes of the table on the single write.
 
 #### List all constraints from other tables referneced to a given table
