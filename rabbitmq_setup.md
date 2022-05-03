@@ -1,4 +1,4 @@
-#### Manage login account
+#### [Manage login account](https://www.rabbitmq.com/access-control.html#user-management)
 
 Note that **ALL the commands** below have to be executed by privileged user (superuser)
 
@@ -22,15 +22,17 @@ rabbitmqctl set_user_tags <USERNAME> administrator
 rabbitmqctl set_user_tags <USERNAME> // clean up all tags added on the user
 ```
 
-#### permissions
+#### Permissions, see [`set_permission` option](https://www.rabbitmq.com/rabbitmqctl.8.html)
 
-Permission must be granted before the user login the broker with the account,
- (what are other options ?)
-
+Permission must be granted before the user login the broker with the account
 ```
 // grant full permission (read, write, execute)
 rabbitmqctl set_permissions -p /  runfaster ".*" ".*" ".*"
 ```
+You can also specify routing key for the user to read / write message, by adding regular expression to `read` field or `write` field
+```
+```
+
 
 #### Queue operations
 
@@ -78,8 +80,7 @@ The downside is that you must restart rabbitmq server for the change to take eff
 
 
 #### Reference 
-
-* (Access ans permissions)[https://www.rabbitmq.com/management.html#permissions]
-* (Management Plugin)[https://www.rabbitmq.com/management.html]
-
+* [`rabbitmqctl(8)` documentation](https://www.rabbitmq.com/rabbitmqctl.8.html)
+* [Access ans permissions](https://www.rabbitmq.com/management.html#permissions)
+* [Management Plugin](https://www.rabbitmq.com/management.html)
 
