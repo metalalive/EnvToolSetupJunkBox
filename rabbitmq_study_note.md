@@ -80,6 +80,8 @@ The downside is that you must restart rabbitmq server for the change to take eff
 
 
 #### Reference 
+* [AMQP 0-9-1 Model Explained — RabbitMQ](https://www.rabbitmq.com/tutorials/amqp-concepts.html)
+* [AMQP 0-9-1 Complete Reference Guide](https://www.rabbitmq.com/amqp-0-9-1-reference.html)
 * [`rabbitmqctl(8)` documentation](https://www.rabbitmq.com/rabbitmqctl.8.html)
 * [Access ans permissions](https://www.rabbitmq.com/management.html#permissions)
 * [Management Plugin](https://www.rabbitmq.com/management.html)
