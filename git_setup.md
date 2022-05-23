@@ -52,5 +52,10 @@ git pull --depth 3 <REMOTE_NAME>  HEAD
 git clone --depth 1 <GIT_REPO_URL> --branch <BRANCH_NAME> 
 ```
 
+To remove local commit without discarding the change :
+* latest commit only
+```
+git reset HEAD^
+```
 
 
