@@ -6,7 +6,7 @@ extern "C" {
 
 #include <libavformat/avformat.h>
 
-int  _start_reading_frames(AVFormatContext *fmt_i_ctx, AVFormatContext *fmt_o_ctx, size_t num_frame_read);
+int  start_processing_packets(AVFormatContext *fmt_i_ctx, AVFormatContext *fmt_o_ctx, size_t num_pkt_rd);
 
 #ifdef __cplusplus
 } // end of extern C clause

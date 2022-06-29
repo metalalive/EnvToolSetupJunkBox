@@ -4,6 +4,7 @@
 #include <unistd.h>
 #include <sys/stat.h>
 
+#include "common.h"
 #include "mp4_hdr.h"
 #include "input_frag.h"
 
@@ -161,6 +162,71 @@ void _app_input_deinit(AVFormatContext *fmt_ctx, struct buffer_data *bd)
     _app_avfmt_deinit_common(fmt_ctx, bd);
 } // end of _app_input_deinit
 
+
+static __attribute__((optimize("O0"))) uint8_t _recover_corrupted_packet(
+        AVFormatContext *fmt_i_ctx, AVPacket *pkt)
+{
+    uint8_t done  = 0;
+    struct buffer_data *bd = fmt_i_ctx->pb->opaque;
+    StreamContext *sctx = &bd->stream_ctx[ pkt->stream_index ];
+    AVStream *in_stream = fmt_i_ctx->streams[ pkt->stream_index ];
+    if(!in_stream) { goto end; }
+    int sample_idx = _av_stream_index_lookup(in_stream, pkt->pos, sctx->last_recovered_pkt_idx);
+    if((sample_idx >= in_stream->nb_index_entries) || (sample_idx < 0)) {
+        goto end;
+    }
+    AVIndexEntry *idx_entry = &in_stream->index_entries[ sample_idx ];
+    if(!idx_entry) { goto end; }
+    size_t expect_pkt_sz = idx_entry->size;
+    size_t old_sz = pkt->size;
+    size_t extra_sz = expect_pkt_sz - old_sz;
+    if(av_grow_packet(pkt, extra_sz) < 0) {
+        av_log(NULL, AV_LOG_ERROR,  "Failed to increease size for incomplete packet \n");
+        goto end;
+    }
+    read(bd->fd, pkt->data + old_sz, extra_sz);
+    fmt_i_ctx-> pb-> pos += extra_sz;
+    fmt_i_ctx-> pb-> bytes_read += extra_sz;
+    // lseek(bd->fd, -1 * extra_sz, SEEK_CUR);
+    // fmt_i_ctx -> pb -> max_packet_size is unset
+    sctx->last_recovered_pkt_idx = (size_t)sample_idx;
+    done  = 1;
+end:
+    return done;
+} // end of _recover_corrupted_packet
+
+static int  _refill_input_buffer(AVFormatContext *fmt_i_ctx, AVPacket *pkt)
+{
+    int ret = 0;
+    int eof = avio_feof(fmt_i_ctx -> pb);
+    uint8_t corruption_fixed = 0;
+    uint8_t is_pkt_corrupted = (pkt->flags & AV_PKT_FLAG_CORRUPT);
+    struct buffer_data *bd = fmt_i_ctx->pb->opaque;
+    if (eof && is_pkt_corrupted) {
+        corruption_fixed = _recover_corrupted_packet(fmt_i_ctx, pkt);
+    } // TODO set limit and report error in case of parsing extremely huge single packet
+    bd->ptr  = bd->ptr_bak;
+    bd->size = read(bd->fd, bd->ptr, bd->size_bak); // from here, the call to avio_feof() will return 0
+    if(bd->size == 0) {
+        av_log(NULL, AV_LOG_WARNING, "_refill_input_buffer(), end of input file reached \n");
+        ret = AVERROR_EOF;// idx = num_pkt_rd;
+        goto end;
+    }
+    if(is_pkt_corrupted) {
+        if(corruption_fixed) {
+            pkt->flags &= (int) ~AV_PKT_FLAG_CORRUPT;
+        } else {
+            // failed to recover current corrupted packet, still return ok
+            // , let application determine whether to abandon this packet
+            av_log(NULL, AV_LOG_WARNING, "_refill_input_buffer(), unable to recover corrupted packet"
+                    ", file pos: 0x%08x, read packet size:%d \n", (uint32_t)pkt->pos, pkt->size);
+        }
+    }
+end:
+    return ret;
+} // end of _refill_input_buffer
+
+
 AVFormatContext *_app_input_init(char *input_filename, struct buffer_data *bd)
 {
 #define  AVIO_CTX_BUFFER_SIZE 2048
@@ -194,6 +260,7 @@ AVFormatContext *_app_input_init(char *input_filename, struct buffer_data *bd)
         ret = _parse_input_stream(fmt_ctx);
         if(ret < 0) { goto error; }
     }
+    bd->refill_input = _refill_input_buffer;
     return fmt_ctx;
 error:
     if(ret < 0) {
@@ -205,4 +272,3 @@ error:
     return NULL;
 #undef  AVIO_CTX_BUFFER_SIZE
 } // end of _app_input_init
-

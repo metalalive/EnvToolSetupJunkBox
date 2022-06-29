@@ -24,14 +24,19 @@ struct buffer_data {
     size_t size; ///< size left in the buffer
     size_t size_bak;
     int fd;
+    void (*flush_output)(struct buffer_data *);
+    int  (*refill_input)(AVFormatContext *, AVPacket *);
     StreamContext *stream_ctx;
+    void *priv_data;
 };
 
 void _app_avfmt_deinit_common(AVFormatContext *fmt_ctx, struct buffer_data *bd);
 
-void _app_config_dst_encoder(AVCodecContext *enc_ctx, AVCodecContext *dec_ctx);
+int setup_output_stream_codec(AVFormatContext *fmt_o_ctx, AVFormatContext *fmt_i_ctx);
 
 int  _av_stream_index_lookup(AVStream *in_stream, size_t target_f_pos, size_t start_idx);
+
+int mkdir_recursive(const char *path);
 
 #ifdef __cplusplus
 } // end of extern C clause

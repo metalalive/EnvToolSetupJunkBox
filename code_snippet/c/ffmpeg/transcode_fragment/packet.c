@@ -31,6 +31,13 @@ static __attribute__((optimize("O0"))) int encode_write_frame_v2(
         } else if (ret >= 0) { // prepare packet for muxing
             enc_pkt.stream_index = stream_idx;
             av_packet_rescale_ts(&enc_pkt, sctx->enc_ctx->time_base, fmt_o_ctx->streams[stream_idx]->time_base);
+            // TODO, figure out 
+            // 1. why video encoder does not update packet duration, while audio encoder does set the duration
+            // 2. does packet duration impact any part of transcoding process ? I can set any random value
+            //    to each packet duration , without getting encoding error, and the video still works well
+            if(enc_pkt.duration == 0) { // always happens to video encoder
+                enc_pkt.duration = (filt_frame) ? filt_frame->pkt_duration: 1;
+            }
             av_log(NULL, AV_LOG_DEBUG, "Write packet %3"PRId64" (size=%5d)\n", enc_pkt.pts, enc_pkt.size);
             // mux encoded frame, TODO, async write with event loop support
             ret = av_interleaved_write_frame(fmt_o_ctx, &enc_pkt);
@@ -173,44 +180,12 @@ static __attribute__((optimize("O0"))) int  try_decode_packet(
 } // end of try_decode_packet
 
 
-static __attribute__((optimize("O0"))) uint8_t _recover_corrupted_packet(
-        AVFormatContext *fmt_i_ctx, AVPacket *pkt)
-{
-    uint8_t done  = 0;
-    struct buffer_data *bd = fmt_i_ctx->pb->opaque;
-    StreamContext *sctx = &bd->stream_ctx[ pkt->stream_index ];
-    AVStream *in_stream = fmt_i_ctx->streams[ pkt->stream_index ];
-    if(!in_stream) { goto end; }
-    int sample_idx = _av_stream_index_lookup(in_stream, pkt->pos, sctx->last_recovered_pkt_idx);
-    if((sample_idx >= in_stream->nb_index_entries) || (sample_idx < 0)) {
-        goto end;
-    }
-    AVIndexEntry *idx_entry = &in_stream->index_entries[ sample_idx ];
-    if(!idx_entry) { goto end; }
-    size_t expect_pkt_sz = idx_entry->size;
-    size_t old_sz = pkt->size;
-    size_t extra_sz = expect_pkt_sz - old_sz;
-    if(av_grow_packet(pkt, extra_sz) < 0) {
-        av_log(NULL, AV_LOG_ERROR,  "Failed to increease size for incomplete packet \n");
-        goto end;
-    }
-    read(bd->fd, pkt->data + old_sz, extra_sz);
-    fmt_i_ctx-> pb-> pos += extra_sz;
-    fmt_i_ctx-> pb-> bytes_read += extra_sz;
-    // lseek(bd->fd, -1 * extra_sz, SEEK_CUR);
-    // fmt_i_ctx -> pb -> max_packet_size is unset
-    sctx->last_recovered_pkt_idx = (size_t)sample_idx;
-    done  = 1;
-end:
-    return done;
-} // end of _recover_corrupted_packet
-
-
-int  _start_reading_frames(AVFormatContext *fmt_i_ctx, AVFormatContext *fmt_o_ctx, size_t num_frame_read)
+int  start_processing_packets(AVFormatContext *fmt_i_ctx, AVFormatContext *fmt_o_ctx, size_t num_pkt_rd)
 {
     int ret = 0, idx = 0;
-    struct buffer_data *bd = fmt_i_ctx->pb->opaque;
-    for (idx = 0; (!ret) && (idx < num_frame_read); idx++) {
+    struct buffer_data *bd_i = fmt_i_ctx->pb->opaque;
+    struct buffer_data *bd_o = fmt_o_ctx->pb->opaque;
+    for (idx = 0; (!ret) && (idx < num_pkt_rd); idx++) {
         AVPacket packet = { .data = NULL, .size = 0 };
         ret = av_read_frame(fmt_i_ctx, &packet);
         if(ret < 0) {
@@ -218,28 +193,12 @@ int  _start_reading_frames(AVFormatContext *fmt_i_ctx, AVFormatContext *fmt_o_ct
             av_strerror(ret, &errbuf[0], 128);
             av_log(NULL, AV_LOG_ERROR,  "av_read_frame(), err = (%d)%s \n", ret, &errbuf[0]);
             continue;
-        } else if (bd->size == 0) {
-            uint8_t corruption_fixed = 0;
-            if (avio_feof(fmt_i_ctx -> pb) && (packet.flags | AV_PKT_FLAG_CORRUPT)) {
-                av_log(NULL, AV_LOG_WARNING, "av_read_frame(), corrupted packet, file pos: 0x%08x,"
-                        " read packet size:%d \n", (uint32_t)packet.pos, packet.size);
-                corruption_fixed = _recover_corrupted_packet(fmt_i_ctx, &packet);
-            } // TODO set limit and report error in case of parsing extremely huge single packet
-            bd->ptr  = bd->ptr_bak;
-            bd->size = read(bd->fd, bd->ptr, bd->size_bak);
-            if(bd->size == 0) {
-                av_log(NULL, AV_LOG_WARNING, "av_read_frame(), end of input file reached (%d) \n", idx);
-                idx = num_frame_read;
+        } else if (bd_i->size == 0) {
+            ret = bd_i->refill_input(fmt_i_ctx, &packet);
+            int still_corrupted = (packet.flags & (int)AV_PKT_FLAG_CORRUPT);
+            if((ret < 0) || still_corrupted) {
                 goto end;
-            }
-            if (avio_feof(fmt_i_ctx -> pb)) {
-                fmt_i_ctx -> pb -> eof_reached = 0;
-                if(corruption_fixed) {
-                    packet.flags &= (uint32_t) ~AV_PKT_FLAG_CORRUPT;
-                } else {
-                    goto end; // unrecoverable, abandon current packet
-                }
-            } // the fetched packet at this moment is corrupted, and should be abandoned
+            } // 
         }
         if(packet.stream_index >= fmt_i_ctx->nb_streams) {
             av_log(NULL, AV_LOG_ERROR,  "read packet, exceeding index, max_n_streams = %d, but got %d \n",
@@ -249,12 +208,15 @@ int  _start_reading_frames(AVFormatContext *fmt_i_ctx, AVFormatContext *fmt_o_ct
         }
         av_log(NULL, AV_LOG_DEBUG, "fetched packet, pos: 0x%08x size:%d \n", (uint32_t)packet.pos, packet.size);
         ret = try_decode_packet(fmt_i_ctx, fmt_o_ctx, &packet);
+        if(ret >= 0 && bd_o->flush_output) {
+            bd_o->flush_output(bd_o);
+        }
 end:
         av_packet_unref(&packet);
     } // end of read iteration
     // flush filters and encoders
     for (idx = 0; idx < fmt_i_ctx->nb_streams; idx++) {
-        StreamContext *sctx = &bd->stream_ctx[idx];
+        StreamContext *sctx = &bd_i->stream_ctx[idx];
         if (sctx->filter_graph) {
             ret = try_filter_frame(fmt_i_ctx, fmt_o_ctx, NULL, idx);
             if (ret < 0) {
@@ -267,6 +229,9 @@ end:
             av_log(NULL, AV_LOG_ERROR, "Flushing encoder failed on stream %d\n", idx);
         }
     }
+    if(ret >= 0 && bd_o->flush_output) {
+        bd_o->flush_output(bd_o);
+    }
     return ret;
-} // end of _start_reading_frames
+} // end of start_processing_packets
 

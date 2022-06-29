@@ -3,7 +3,7 @@
  */
 
 #include "input_frag.h"
-#include "output_file.h"
+#include "output_hls.h"
 #include "filter.h"
 #include "packet.h"
 
@@ -34,6 +34,7 @@ int main(int argc, char *argv[])
     if (ret) { goto end; }
     ret = start_processing_packets(ifmt_ctx, ofmt_ctx, num_frames);
     av_write_trailer(ofmt_ctx);
+    o_bd.flush_output(&o_bd);
 end:
     _app_input_deinit(ifmt_ctx, &i_bd);
     _app_output_deinit(ofmt_ctx, &o_bd);
