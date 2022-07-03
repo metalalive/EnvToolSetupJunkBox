@@ -42,10 +42,17 @@ static __attribute__((optimize("O0"))) void _app_config_dst_encoder(
         // video time_base can be set to whatever is handy and supported by encoder
         ////enc_ctx->time_base = av_inv_q(dec_ctx->framerate);
         enc_ctx->time_base = dec_ctx->time_base;
-        enc_ctx->framerate = (AVRational){num:11, den:1}; // dec_ctx->framerate;
+        enc_ctx->framerate = (AVRational){num:11, den:1}; //  dec_ctx->framerate;//
+        enc_ctx->bit_rate  = dec_ctx->bit_rate;
     } else { // AVMEDIA_TYPE_AUDIO
-        enc_ctx->sample_rate = 44100; // dec_ctx->sample_rate; , change sample rate will make it sound `digital`
-        enc_ctx->bit_rate    = 63999; // dec_ctx->bit_rate; , will reduce file size
+        // 1. can also set to valid value e.g. 44100
+        // 2. To change sample rate, the audio will sound more `digital`
+        enc_ctx->sample_rate = dec_ctx->sample_rate;
+        // 1. can also set to valid value e.g. 127999, 63999
+        // 2. lower bit rate can reduce overall file size
+        // 3. the bit rate has to be set to any number which is equal to or lower than
+        //    its original (input) value, otherwise the encoder will report error
+        enc_ctx->bit_rate    = FFMIN(dec_ctx->bit_rate, 63999);
         enc_ctx->channel_layout = dec_ctx->channel_layout;
         enc_ctx->channels = av_get_channel_layout_nb_channels(enc_ctx->channel_layout);
         // take first format from list of supported formats
@@ -70,7 +77,12 @@ int setup_output_stream_codec(AVFormatContext *fmt_o_ctx, AVFormatContext *fmt_i
         AVCodecContext *dec_ctx = bd->stream_ctx[idx].dec_ctx;
         if(dec_ctx->codec_type == AVMEDIA_TYPE_VIDEO || dec_ctx->codec_type == AVMEDIA_TYPE_AUDIO)
         {
-            AVCodec *encoder = avcodec_find_encoder(dec_ctx->codec_id);
+            //// AVCodec *encoder = avcodec_find_encoder(dec_ctx->codec_id);
+            // HLS container currently only works with h264 and h265,
+            //  but many web broswers haven't supported h265 yet
+            AVCodec *encoder = dec_ctx->codec_type == AVMEDIA_TYPE_VIDEO ?
+                avcodec_find_encoder(AV_CODEC_ID_H264):
+                avcodec_find_encoder(dec_ctx->codec_id);
             if (!encoder) {
                 av_log(NULL, AV_LOG_FATAL, "Necessary encoder not found\n");
                 ret = AVERROR_INVALIDDATA;

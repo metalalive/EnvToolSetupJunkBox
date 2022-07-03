@@ -36,7 +36,7 @@ static __attribute__((optimize("O0"))) int encode_write_frame_v2(
             // 2. does packet duration impact any part of transcoding process ? I can set any random value
             //    to each packet duration , without getting encoding error, and the video still works well
             if(enc_pkt.duration == 0) { // always happens to video encoder
-                enc_pkt.duration = (filt_frame) ? filt_frame->pkt_duration: 1;
+                enc_pkt.duration = (filt_frame && filt_frame->pkt_duration) ? filt_frame->pkt_duration: 1;
             }
             av_log(NULL, AV_LOG_DEBUG, "Write packet %3"PRId64" (size=%5d)\n", enc_pkt.pts, enc_pkt.size);
             // mux encoded frame, TODO, async write with event loop support
