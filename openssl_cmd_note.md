@@ -1,4 +1,4 @@
-### Quick Note
+### Certificate setup
 
 #### generate CA cert / (RSA) private key
 ```
@@ -66,4 +66,15 @@ openssl rsautl -verify -inkey ca_pubkey_test.pem -in ca_crt_test_sig.bin  -pubin
 
 xxd ca_crt_test_sig_decrypted.bin
 ```
+
+### AES encryption
+* encryption using AES 128-bit with CBC (cipher-block chaining)
+```
+openssl  aes-128-cbc  -e -K e572e12af942e78d9c2ab2bc8f137d86  -iv 152a1c871599356bd658617791d3d801 \
+      -in  /path/to/origin_file  -out /path/to/processed_file
+```
+* to decrypt the encrypted file, replace `-e` with `-d`
+* The raw key option `-K` indicates hex string of 16 octets (16 x 8 = 128 bits)
+* `-iv` (initialization vector) is required if `-K` is specified
+
 
