@@ -60,6 +60,7 @@ LD_LIBRARY_PATH="/PATH/TO/FFMPEG_INSTALLED_DIR/lib:/PATH/TO/GNUTLS_LIB_DIR:/PATH
 ```
 * `-f hls` indicates the output should be HLS compliant
 * `-hls_segment_type` can be either  [`fmp4`](https://datatracker.ietf.org/doc/html/rfc8216#section-3.3) or [`ts`](https://datatracker.ietf.org/doc/html/rfc8216#section-3.2) 
+* `-hls_enc` enables encryption in HLS. As of [ffmpeg 4.3.3](https://ffmpeg.org/ffmpeg-formats.html#hls-2), it only supports `mpeg-ts` segment type, for `fMP4` segment, use [openssl aes-128-cbc](./openssl_cmd_note.md) to encrypt / decrypt all segments and initialization section, and modify playlist by adding few valid tags, see [example](./HLS_example_playlist.m3u8).
 * The output includes a playlist file named ` stream.m3u8` , a set of media segment files with default name `stream0.m4s`, `stream1.m4s`, `stream2.m4s` ..... etc (for `-hls_segment_type fmp4`)
 * `-hls_playlist_type` can be `vod` or `event`, `vod` is for static video file, `event` is for live stream because applicatoins is allowed to append new media segment entries to the end of playlist (the `.m3u8` file)
 * the input file can also have multiple video streams (possible usage scenario could be to provide different resolution and bitrate for different network speed)
@@ -87,6 +88,7 @@ After the `ffmpeg` command above, you can host all the output files on HTTP serv
 </body>
 </html>
 ```
+
 ##### Variant Audio/Video streams
 The following example sets 2 variant streams , each of which has different resolutions (apply `scale` in `-filter`), video/audio bitrates: 
 ```
