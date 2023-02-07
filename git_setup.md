@@ -11,11 +11,11 @@ git init
 
 * Use [remote](https://git-scm.com/docs/git-remote) to specify which branch of remote repository your local codebase should synchronize with
 ```
-git remote add  -t <BRANCH_NAME> <REMOTE_NAME> <GIT_REPO_URL>
+git remote add  -t <BRANCH_NAME>  <ALIAS_NAME_OF_REMOTE_REPO>  <GIT_REPO_URL>
 ```
 e.g.
 ```
-git remote add  origin https://my.github.codebases/project123
+git remote add -t my_remote_master  local_origin_123   https://my.github.codebases/project123
 ```
 
 To fetch codebase at specific commit without loading all older commits in the same branch.
@@ -27,13 +27,21 @@ git fetch --depth 1 <REMOTE_NAME>  <COMMIT_SHA1>
 
 To switch between commits, you have [git-checkout](https://git-scm.com/docs/git-checkout).
 
-To switch to the latest commit :
+- switch to the latest commit :
 ```
 git checkout FETCH_HEAD
 ```
-or to switch to specific tag :
+- switch to specific commit :
+```
+git checkout <SHA_HEXSTRING_OF_THE_COMMIT>
+```
+- switch to specific tag :
 ```
 git checkout <TAG_NAME>
+```
+- switch to specific branch :
+```
+git checkout <EXISTING_BRANCH_NAME>
 ```
 
 * List all tags which can be switched to in the local repository (depends on `--depth` in your previous `git fetch`)
