@@ -13,10 +13,10 @@ git init
 
 * Use [remote](https://git-scm.com/docs/git-remote) to specify which branch of remote repository your local codebase should synchronize with
 ```
-git remote add  -t <REMOTE_BRANCH_NAME>  <ALIAS_NAME>  <GIT_REPO_URL>
+git remote add  -t <EXISTING_REMOTE_BRANCH>  <ALIAS_NAME>  <GIT_REPO_URL>
 ```
 where
-- `<REMOTE_BRANCH_NAME>` : branch name created at remote repo
+- `<EXISTING_REMOTE_BRANCH>` : branch name created at remote repo
 - `<ALIAS_NAME>` : alias name of the remote git repo, referenced at local git repo
 
 e.g.
@@ -46,7 +46,7 @@ git branch <LOCAL_LABEL>
 Note:
 - local branches may be different from remote branches in the same repo
 - For [Shallow Clone](#shallow-clone) where a default [detached branch](https://stackoverflow.com/questions/10228760/how-do-i-fix-a-git-detached-head) is created, it is a good practice to create other local branches (e.g. one for backup, others for new patches) before you move on and change the codebase.
-- Once you switch from detached branch to any other branch (by `git checkout <ANY_LOCAL_BRANCH>`), the detached branch will disappear, it is better NOT to change the code under detached branch.
+- Once you switch from detached branch to any other branch (by `git checkout <EXISTING_LOCAL_BRANCH>`), the detached branch will disappear, it is better NOT to change the code under detached branch.
 
 #### Switch between commits
 Consider `commit` as single node of an arbitrary tree structure, you can switch between them back and forth using [git-checkout](https://git-scm.com/docs/git-checkout).
@@ -71,6 +71,9 @@ Preresuisites :
 git checkout <EXISTING_LOCAL_BRANCH>
 git push -u <ALIAS_NAME>   HEAD:<EXISTING_REMOTE_BRANCH>
 ```
+where
+- `<EXISTING_REMOTE_BRANCH>` : branch name created at remote repo
+- `<ALIAS_NAME>`: name of the remote git repo, previously created on `git remote add`
 
 #### Misc
 * List all tags which can be switched to in the local repository (depends on `--depth` in your previous `git fetch`)
