@@ -55,9 +55,11 @@ Note :
 - `--add-module` indicates the path to third-party module which will be statically build and linked to nginx executable.
 
 
+Start building executable
 ```
 make >& build.log
 ```
+
 Note
 - Building nginx takes about 3 hours on Raspberry PI 1
 - For openssl v1.1.1 series, make sure the macro parameter `OPENSSL_VERSION_NUMBER` is correct value,  the bit range [31:8] should be `0x101010` . There are commits that contained incorrect / confusing parameters , that will lead to compile error in other C program.
@@ -68,12 +70,12 @@ sudo make install >& install.log
 ```
 
 #### Configuration
-Here is a simple example :
+Here is an example of proxy server, it requires the module [vhost traffic status (nginx-module-vts)](https://github.com/vozlt/nginx-module-vts) built with the nginx server.
 
-```perl
+```nginx
 #user  OS_USER_NAME  OS_USER_GROUP;
 worker_processes  1;
-# nginx seems to log error messages at INFO level
+## logging level can be `debug`, `info`, `error`
 error_log   logs/nginx.error.log info;
 pid         logs/nginx.pid; # to run nginx instance as a daemon
 worker_rlimit_nofile  128;
@@ -87,9 +89,25 @@ http {
     default_type  application/octet-stream;
     sendfile      on;
     keepalive_timeout  37;
+    
+    ## basic setup for nginx-module-vts
+    vhost_traffic_status_zone  shared:vts_stats_shr:3m;
+    vhost_traffic_status_filter_by_set_key  $status  resp_status::*;
+    vhost_traffic_status_histogram_buckets  0.025 0.05 0.1  0.3  0.5  1 5 10;
+    
+    # the path has to be present (created by OS_USER_NAME) before starting the server
+    proxy_cache_path  customdata/nJeeks/cache  levels=2:2  inactive=4m  use_temp_path=off  max_size=10m  keys_zone=zone_one:2m;
 
-    # the upstream component nginx server needs to connect to
-    upstream django {
+    upstream backend_app_345 {
+        server localhost:8010  max_conns=31;
+        keepalive   10;
+    } # all the identical servers should use the same settings ?
+
+
+
+
+    # you might have another server group running in different setup
+    upstream django_backend {
         server localhost:8009; # use web port socket
     }
 
@@ -108,8 +126,19 @@ http {
             ##uwsgi_pass   localhost:8009;
         }
     }
-}
+} ## end of http block
 ```
+Note:
+- [`$status`](http://nginx.org/en/docs/http/ngx_http_core_module.html#var_status) is a built-in variable which indicates response status code.
+- `vhost_traffic_status_filter_by_set_key` directive filters the incoming requests by the variable `$status`, the statistic data will be classified by the response status code (e.g. 200, 404, 500). `resp_status::*` is just a label for the report.
+- For `proxy_cache_path`
+  - `keys_zone` specifies :
+    - the label of the **zone** where cached data is stored. Different server contexts / blocks may share the same **zone**.
+    - size of preserved space (in MBytes) used for the keys in **zone**. One key is mapped to one cached file.
+  - the absolute path of cache will be `/PATH/TO/YOUR/SERVER/SETUP/FOLDER/customdata/nJeeks/cache`
+  - `levels` indicates local path to cached data under `customdata/nJeeks/cache`
+  - `inactive` specifies how many minutes a cached data will be stored, that is, Nginx automatically deletes the cached file which hasn't been accessed over `inactive` minutes (in this example, it is 4 minutes).
+  - `max_size` size of preserved space (in MBytes) limited to the current cache zone.
 
 #### Run
 Go to `/PATH/TO/YOUR/SERVER/SETUP_FOLDER` run the command :
