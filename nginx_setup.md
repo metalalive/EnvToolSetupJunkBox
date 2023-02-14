@@ -181,13 +181,19 @@ Note:
 - In `proxy_pass`, you can also specify upstream label (in this example, it is `backend_app_345`) , which passes the request to one of the sevrers in the upstream block.
 - `proxy_cache_key` specifies the key to the cache zone `zone_one`. Note that the key can NOT be used directly to look for final cached file saved in `customdata/nJeeks/cache`.
 - To cache a file, a cache zone internally generate another key in MD5 hash format then use it as the path to the cached file under `customdata/nJeeks/cache`
-- `proxy_cache_valid` indicate expiry time (in minute) if an upstream server responds with expected status code.
+- `proxy_cache_valid` indicates expiry time (in minute) if an upstream server responds with expected status code.
   - In this example, response body from upstream server is cached for `/file` endpoint, if the status code is `200` (ok)
   - For any request to access an existing cached file:
     - if the time is less than 1 minute after the file was saved, the proxy server simply returns the cached file. 
     - otherwise, the file is expired, the proxy server sends a request again to upstream server for content update.
+  - The header [`cache-control`](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Cache-Control) takes precedence over `proxy_cache_valid` if it is present in the response of upstream app server.
+    - if directive `max-age` in `cache-control` is set to positive number, then nginx caches the response body.
+    - otherwise, if directives `no-cache`, `private` are specified in the header, nginx will NOT cache the response body.
 - For `proxy_cache_valid` vs. `inactive` in `proxy_cache_path`, see [this StackOverflow thread](https://stackoverflow.com/questions/64151378/).
 
+
+Questions :
+- if `no-cache` is present in the header `cache-control`, does `proxy_no_cache` still take effect ?
 
 #### Run
 Go to `/PATH/TO/YOUR/SERVER/SETUP_FOLDER` run the command :
@@ -221,4 +227,6 @@ sudo kill -SIGTERM  CURR_NGINX_PID
 * [Configure Nginx running with uWSGI](https://uwsgi-docs.readthedocs.io/en/latest/tutorials/Django_and_nginx.html#basic-nginx)
 * [How To Set Up uWSGI and Nginx to Serve Python Apps on Ubuntu 14.04](https://www.digitalocean.com/community/tutorials/how-to-set-up-uwsgi-and-nginx-to-serve-python-apps-on-ubuntu-14-04)
 * [Nginx full-example configuration](https://www.nginx.com/resources/wiki/start/topics/examples/full/)
+* [A Guide to Caching with NGINX and NGINX Plus](https://www.nginx.com/blog/nginx-caching-guide/)
+* [ServerFault - NGINX proxy cache time with Cache-Control](https://serverfault.com/questions/915463)
 
