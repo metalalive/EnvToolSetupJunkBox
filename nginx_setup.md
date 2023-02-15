@@ -1,12 +1,40 @@
+### Use cases
+- reverse proxy
+- content caching
+- Load balancing
 
-### Nginx 1.21.6
+Relevant background knowledge:
+- [Proxy](https://security.stackexchange.com/questions/189088)
+  - something acting on behalf of something else;
+    - the 3rd computer (say `Px`) sits in between 2 computers (say `A1` and `A2`).
+    - for example : `A1` requests a file in `A2`
+  - normally, `A1` and `A2` communicate directly with each other without `Px`
+  - in some cases, proxy `Px` is a better option :
+    - some files are so popular, large traffic volume is flooding in to `A2`
+    - too many files to serve in one single computer `A2`
+- [Forward proxy vs. reverse proxy (StackOverflow)](https://stackoverflow.com/questions/224664)
+  - forward proxy:
+    - `Px` acts on behalf of `A1` and talks to `A2`. `A2` doesn't know `A1`
+    - use case : security concern, some administrative authority (`Px`) controls `A1`'s internet access, so `A1` cannot directly talk to `A2`
+  - reverse proxy:
+    - `Px` acts on behalf of `A2` and talks to `A1`. `A1` doesn't know `A2`
+    - use case : 
+      - cache popular files from `A2` to `Px`, then `A1` requests a popular file in `Px`, this can reduce:
+        - traffic volume to `A2`
+        - response time of the file
+      - add new computer (say `A20`) to serve some files and work in parallel with `A2`.
+        - `A1` is NOT aware of 2 different computers serving files, since it only talks to `Px`
 
+![diagram of proxying](https://i.stack.imgur.com/0qpxZ.png)
+
+### Nginx version
+1.21.6
+
+### Build from source
 Environment :
   * Debian 9 (Raspbian Stretch), Ubuntu LTS 14.04
   * OpenSSL 1.1.1c, also built from source
 
-
-#### Build from source  
 configure the build by running `./auto/configure`, carefully check each parameter
 ```shell
 ./auto/configure \
@@ -69,7 +97,7 @@ Installation, may be optional
 sudo make install >& install.log
 ```
 
-#### Configuration
+### Configuration
 Here is an example of proxy server, it requires the module [vhost traffic status (nginx-module-vts)](https://github.com/vozlt/nginx-module-vts) built with the nginx server.
 
 ```nginx
@@ -163,6 +191,7 @@ http {
     }
 } ## end of http block
 ```
+
 Note:
 - [`$status`](http://nginx.org/en/docs/http/ngx_http_core_module.html#var_status) is a built-in variable which indicates response status code.
 - `vhost_traffic_status_filter_by_set_key` directive filters the incoming requests by the variable `$status`, the statistic data will be classified by the response status code (e.g. 200, 404, 500). `resp_status::*` is just a label for the report.
@@ -195,7 +224,11 @@ Note:
 Questions :
 - if `no-cache` is present in the header `cache-control`, does `proxy_no_cache` still take effect ?
 
-#### Run
+### Load Balancing in Nginx
+#### Layer 7 (HTTP)
+#### Layer 4 (TCP/UDP)
+
+### Run
 Go to `/PATH/TO/YOUR/SERVER/SETUP_FOLDER` run the command :
 
 ```
@@ -220,7 +253,7 @@ cat  logs/nginx.pid
 sudo kill -SIGTERM  CURR_NGINX_PID
 ```
 
-#### Reference
+### Reference
 * [Build Nginx from source -- MatthewVance](https://github.com/MatthewVance/nginx-build/blob/master/build-nginx.sh)
 * [How To Compile Nginx From Source and Install on Raspbian Jessie](https://www.linuxbabe.com/raspberry-pi/compile-nginx-source-raspbian-jessie)
 * [Build Nginx from source - offiical doc](https://docs.nginx.com/nginx/admin-guide/installing-nginx/installing-nginx-open-source/)
@@ -228,5 +261,6 @@ sudo kill -SIGTERM  CURR_NGINX_PID
 * [How To Set Up uWSGI and Nginx to Serve Python Apps on Ubuntu 14.04](https://www.digitalocean.com/community/tutorials/how-to-set-up-uwsgi-and-nginx-to-serve-python-apps-on-ubuntu-14-04)
 * [Nginx full-example configuration](https://www.nginx.com/resources/wiki/start/topics/examples/full/)
 * [A Guide to Caching with NGINX and NGINX Plus](https://www.nginx.com/blog/nginx-caching-guide/)
+* [Nginx HTTP load balancing](https://docs.nginx.com/nginx/admin-guide/load-balancer/http-load-balancer/)
 * [ServerFault - NGINX proxy cache time with Cache-Control](https://serverfault.com/questions/915463)
 
