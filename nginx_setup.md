@@ -141,6 +141,8 @@ http {
         error_page   500 502 503 504  515 /50x.html;
         ssl_certificate      /PATH/TO/PROXY/SERVER.crt;
         ssl_certificate_key  /PATH/TO/PROXY/SERVER/secret.key;
+        ssl_protocols   TLSv1.3  TLSv1.2;
+        ssl_session_timeout   6m;
         
         location /status {
             vhost_traffic_status_display;
