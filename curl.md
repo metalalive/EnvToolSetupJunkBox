@@ -44,6 +44,7 @@ LD_LIBRARY_PATH="/PATH/TO/installed/lib" /PATH/TO/installed/bin/curl  \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
     --header "<CUSTOM_HEADER_LABEL>: <CUSTOM_HEADER_VALUE>" \
+    --output - \
     <WHATEVER_DATA> \
     <YOUR_URL_PATH>
 ```
@@ -54,10 +55,13 @@ LD_LIBRARY_PATH="/PATH/TO/installed/lib" /PATH/TO/installed/bin/curl  \
 * can also specify `--http2` or `--http3`
 * `<WHATEVER_DATA>` can be one of following :
   * simple text, e.g. `--data "{\"my_field\": 567}"`
+  * complicated textual data, e.g. `--data  @/PATH/TO/LARGE/DATA.json`
   * binary data read from file, e.g. `--form "image=@/PATH/TO/IMAGE_FILE"`
+* `--output -` is optional and applied **only** when the response body is NOT textual data (e.g. binary file), in such case you will need to redirect console output to file e.g. `curl -opt1 -opt2 .... http://the.url.com > /PATH/TO/RESPONSE-DATA.bin`.
+
+#### Restriction
+- As of version 7.88 (currently the latest version), if TLS v1.3 is applied, it is still NOT possible to fetch [pre-shared key](https://www.rfc-editor.org/rfc/rfc8446#section-4.2.11) from previous `curl` command (more exactly, end of previous TLS handshake) and then reuse the same key for next `curl` command, so the peers always send certificate in each TLS certicate.
 
 #### reference
-
+https://stackoverflow.com/questions/50740130/tls-psk-support-in-curl
 https://github.com/curl/curl/blob/master/GIT-INFO
-
-
