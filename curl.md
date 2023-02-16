@@ -63,5 +63,5 @@ LD_LIBRARY_PATH="/PATH/TO/installed/lib" /PATH/TO/installed/bin/curl  \
 - As of version 7.88 (currently the latest version), if TLS v1.3 is applied, it is still NOT possible to fetch [pre-shared key](https://www.rfc-editor.org/rfc/rfc8446#section-4.2.11) from previous `curl` command (more exactly, end of previous TLS handshake) and then reuse the same key for next `curl` command, so the peers always send certificate in each TLS certicate.
 
 #### reference
-https://stackoverflow.com/questions/50740130/tls-psk-support-in-curl
-https://github.com/curl/curl/blob/master/GIT-INFO
+- https://stackoverflow.com/questions/50740130/tls-psk-support-in-curl
+- https://github.com/curl/curl/blob/master/GIT-INFO
