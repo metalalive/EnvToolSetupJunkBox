@@ -60,7 +60,7 @@ LD_LIBRARY_PATH="/PATH/TO/installed/lib" /PATH/TO/installed/bin/curl  \
 * `--output -` is optional and applied **only** when the response body is NOT textual data (e.g. binary file), in such case you will need to redirect console output to file e.g. `curl -opt1 -opt2 .... http://the.url.com > /PATH/TO/RESPONSE-DATA.bin`.
 
 #### Restriction
-- As of version 7.88 (currently the latest version), if TLS v1.3 is applied, it is still NOT possible to fetch [pre-shared key](https://www.rfc-editor.org/rfc/rfc8446#section-4.2.11) from previous `curl` command (more exactly, end of previous TLS handshake) and then reuse the same key for next `curl` command, so the peers always send certificate in each TLS certicate.
+- As of version 7.88 (currently the latest version), if TLS v1.3 is applied, it is still NOT possible to fetch [pre-shared key](https://www.rfc-editor.org/rfc/rfc8446#section-4.2.11) from previous `curl` command (more exactly, end of previous TLS handshake) and then reuse the same key for next `curl` command, so the peers always send certificate to each other as [the initial handsake workflow](https://www.rfc-editor.org/rfc/rfc8446#section-2).
 
 #### reference
 - https://stackoverflow.com/questions/50740130/tls-psk-support-in-curl
