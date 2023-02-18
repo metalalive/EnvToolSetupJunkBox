@@ -77,4 +77,20 @@ openssl  aes-128-cbc  -e -K e572e12af942e78d9c2ab2bc8f137d86  -iv 152a1c87159935
 * The raw key option `-K` indicates hex string of 16 octets (16 x 8 = 128 bits)
 * `-iv` (initialization vector) is required if `-K` is specified
 
+### TLS connection
+OpenSSL provides a test tool `s_client` acting as frontend client initiating TLS handshake. 
+```shell
+openssl s_client -CAfile /PATH/TO/CERTS/CA.crt   -tls1_3 -state  -sess_out \
+    /PATH/TO/OUTPUT/SESSION-PARAM.pem   -connect localhost:1234
+```
+Note:
+- session file can be saved to `/PATH/TO/OUTPUT/SESSION-PARAM.pem`, the content depends on your TLS version, e.g. in TLS 1.3, it includes pre-shared key ID / resumption key / ticket / cipher suites / other information.
 
+To dump detail in the session file, use subcommand `sess_id`
+```
+openssl sess_id -in  /PATH/TO/OUTPUT/SESSION-PARAM.pem -text -noout
+```
+once session file is saved, you can use it for subsequent TLS handshakes to the same host/port by the expiry time
+```
+openssl s_client -noservername -sess_in  /PATH/TO/OUTPUT/SESSION-PARAM.pem  -sess_out  /PATH/TO/OUTPUT/SESSION-PARAM.pem   -tls1_3  -state  -connect localhost:1234
+```
