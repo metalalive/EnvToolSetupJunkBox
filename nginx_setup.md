@@ -29,7 +29,7 @@ Relevant background knowledge:
 ![diagram of proxying](https://i.stack.imgur.com/0qpxZ.png)
 
 ### Nginx version
-1.21.6
+1.23.3
 
 ### Build from source
 Environment :
@@ -206,7 +206,9 @@ http {
 - `ssl_certificate` and `ssl_certificate_key` is acceptable ONLY in server block, in this example the certificate is applied between frontend client and the proxy server.
 - once `ssl_session_ticket_key` is specified with path of pre-shared key file, application will take responsibility to rotate the key, Nginx **won't** do that automatically.
 - `ssl_session_cache` indicate the cache area for session storage, for TLS handshake ooptimization (???????)
-
+  - for example in TLS 1.3, the cache internally saves psk (pre-shared keys) for sessions which hasn't expired yet
+  - to verify whether TLS 1.3 and its pre-shared key functionality is up and running, use openssl utility [`s_client`](./openssl_cmd_note.md#tls-connection) instead of [`curl`](./curl.md), because `curl` doesn't seem to provide command option for session resumption (e.g. fetch pre-shared key data in previous `curl` command and then specify it in next `curl` command, also `--sessionid` doesn't exist in `curl` command)
+- `ssl_session_timeout` in TLS 1.3 indicates lifetime of each cached session (note nginx sends [`NewSessionTicket`](https://www.rfc-editor.org/rfc/rfc8446#section-4.6.1) message after handshake is done successfully)
 
 
 ### Reverse Proxy in Nginx
@@ -289,4 +291,6 @@ sudo kill -SIGTERM  CURR_NGINX_PID
 * [Proxy vs. Reverse Proxy (Explained by Example)](https://www.youtube.com/watch?v=ozhe__GdWC8)
 * [Nginx HTTP load balancing](https://docs.nginx.com/nginx/admin-guide/load-balancer/http-load-balancer/)
 * [ServerFault - NGINX proxy cache time with Cache-Control](https://serverfault.com/questions/915463)
+* [curl issue -- openssl: support session resume with TLS 1.3](https://github.com/curl/curl/pull/3271)
+* [curl mail list thread -- TLS session ID re-use broken in 7.77.0](https://curl.se/mail/lib-2021-06/0016.html)
 
