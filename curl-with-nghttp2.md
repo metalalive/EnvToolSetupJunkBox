@@ -1,22 +1,56 @@
-
-#### HTTP/2 in cURL
+### HTTP/2 in cURL
 To support [http/2](https://datatracker.ietf.org/doc/html/rfc7540) , [curl](https://github.com/curl/curl) actually relies on a third-party library named [nghttp2](https://github.com/nghttp2/nghttp2) , without installation of `nghttp2` , the command `curl --http2 THE_URL_TO_TEST` will silently downgrade to http/1.1 (add `-v` for printing verbose), which is difficult to debug. See [the article](https://curl.se/docs/http2.html) for detail.
 
 #### Build nghttp2 from source
+prerequisite:
+- libev
+- [jansson](https://github.com/akheron/jansson)
+- python3, virtual environment is also OK
+```shell
+python -m venv  YOUR-NAME-PY3-ENV
+source   YOUR-NAME-PY3-ENV/bin/activate
 ```
-CC="/PATH/TO/bin/gcc"  CXX="/PATH/TO/bin/g++"  PKG_CONFIG_PATH=""  cmake   -DENABLE_LIB_ONLY=ON  ..
-make
-sudo make install
+once python environment is ready, start configuing and building
 ```
-Note that `CMakeLists.txt` in [curl](https://github.com/curl/curl) looks for `libnghttp2.so` only by the command `find_package(xxx)` , but `nghttp2` actually provides useful [pkg-config metadata file](https://en.wikipedia.org/wiki/Pkg-config) that is NOT used in `curl` build process.... 
+mkdir build
+cd build
+CC="/PATH/TO/bin/gcc"  CXX="/PATH/TO/bin/g++"  PKG_CONFIG_PATH="/PATH/TO/jansson/installed/lib/pkgconfig" \
+     cmake -DCMAKE_PREFIX_PATH="/PATH/TO/INSTALLED/FOLDER"  -DENABLE_APP=ON   -DENABLE_LIB_ONLY=ON  ..
 
-#### Build curl from source
-##### Configure by `./configure` shell script
+```
+Note:
+- `CMakeLists.txt` in [curl](https://github.com/curl/curl) looks for `libnghttp2.so` only by the command `find_package(xxx)` , but `nghttp2` actually provides useful [pkg-config metadata file](https://en.wikipedia.org/wiki/Pkg-config) that is NOT referenced in `curl` build process.
+- `ENABLE_LIB_ONLY` and `ENABLE_APP` can NOT be turned on in the same build
+- `ENABLE_APP` indicates the build wil include utilities such as executable server, and [h2load](https://nghttp2.org/documentation/h2load-howto.html)
+
+to build everything, you have
+```
+make
+```
+or builb the tool `h2load` only
+```
+make h2load
+```
+If the tool is built successfully, the executable `h2load` is located at `/PATH/TO/NGHTTP2/build/src/h2load`
+
+#### usage
+ensure you are in the python environment `YOUR-NAME-PY3-ENV` before running `h2load`
+```
+./src/h2load --requests=8 --clients=8   --verbose  https://localhost:1234/
+```
+Note:
+- HTTP/2 is turned on by default
+- TLS 1.3, not sure the default TLS version
+- can NOT specify path to custom certificate.
+
+### Build curl from source
+#### Configure
+By `./configure` shell script
 ```
 ./buildconf
 ./configure
 ```
-##### Configure by Cmake script
+By Cmake script
 ```
 CC="/PATH/TO/bin/gcc"  CXX="/PATH/TO/bin/g++"  PKG_CONFIG_PATH=""  cmake -DCMAKE_INSTALL_PREFIX="/PATH/TO/installed"  -DBUILD_SHARED_LIBS=ON -DCURL_DISABLE_DICT=ON  -DCURL_DISABLE_FTP=ON  -DCURL_DISABLE_TFTP=ON  -DCURL_DISABLE_POP3=ON  -DCURL_DISABLE_GOPHER=ON  -DUSE_NGHTTP2=ON  ..
 ```
@@ -30,7 +64,7 @@ make install
 the built library should be at `/PATH/TO/installed`. (defaults to `/usr/local/lib/libcurl.so`)
 
 
-#### Usage
+### Usage
 * example #1
 ```
 LD_LIBRARY_PATH="/PATH/TO/installed/lib" /PATH/TO/installed/bin/curl --version
@@ -59,9 +93,10 @@ LD_LIBRARY_PATH="/PATH/TO/installed/lib" /PATH/TO/installed/bin/curl  \
   * binary data read from file, e.g. `--form "image=@/PATH/TO/IMAGE_FILE"`
 * `--output -` is optional and applied **only** when the response body is NOT textual data (e.g. binary file), in such case you will need to redirect console output to file e.g. `curl -opt1 -opt2 .... http://the.url.com > /PATH/TO/RESPONSE-DATA.bin`.
 
-#### Restriction
-- As of version 7.88 (currently the latest version), if TLS v1.3 is applied, it is still NOT possible to fetch [pre-shared key](https://www.rfc-editor.org/rfc/rfc8446#section-4.2.11) from previous `curl` command (more exactly, end of previous TLS handshake) and then reuse the same key for next `curl` command, so the peers always send certificate to each other as [the initial handsake workflow](https://www.rfc-editor.org/rfc/rfc8446#section-2).
+### Restriction
+- As of version 7.88 (currently the latest version), if TLS v1.3 is applied, there is still NO option to save [pre-shared key](https://en.wikipedia.org/wiki/TLS-PSK) from previous `curl` command (more exactly, the host-handshake message `NewSessionTicket`) and then reuse the same key for next `curl` command, so the peers always do [full handsake](https://www.rfc-editor.org/rfc/rfc8446#section-2) as it was in previous command.
 
-#### reference
-- https://stackoverflow.com/questions/50740130/tls-psk-support-in-curl
-- https://github.com/curl/curl/blob/master/GIT-INFO
+### reference
+- [TLS-PSK support in curl](https://stackoverflow.com/questions/50740130/tls-psk-support-in-curl)
+- [curl source repo](https://github.com/curl/curl/blob/master/GIT-INFO)
+- [h2load - HTTP/2 benchmarking tool - HOW-TO](https://nghttp2.org/documentation/h2load-howto.html)
