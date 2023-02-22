@@ -117,7 +117,7 @@ http {
     include       conf/mime.types;
     default_type  application/octet-stream;
     sendfile      on;
-    keepalive_timeout  37;
+    keepalive_timeout  25;
     
     ## basic setup for nginx-module-vts
     vhost_traffic_status_zone  shared:vts_stats_shr:3m;
@@ -126,6 +126,8 @@ http {
     
     # the path has to be present (created by OS_USER_NAME) before starting the server
     proxy_cache_path  customdata/nJeeks/cache  levels=2:2  inactive=4m  use_temp_path=off  max_size=10m  keys_zone=zone_one:2m;
+    
+    limit_conn_zone  $binary_remote_addr  zone=mylmt_conns_state:1m;
 
     upstream backend_app_345 {
         # could scale to serveral app servers
@@ -172,7 +174,9 @@ http {
             proxy_buffering  on; # it is turned on by default
             proxy_buffer_size  5k;
             proxy_buffers    7  9k;
-        }
+            limit_conn  mylmt_conns_state  1;
+            limit_conn_status  429;
+        } ## end of location block
     } # end of proxy server block
 
 
@@ -242,7 +246,20 @@ According to the configuration above, there are key factors which build up proxy
 - Use case: Slow client downloading chunks of response data (synchronously) from the proxy server
 - `proxy_buffering`, turned on by default
 - the size argument in `proxy_buffers` and `proxy_buffer_size` defaults to memory page size of the OS (4KB | 8KB)
-- `proxy_buffer_size` specifies the size only for first chunk of response ; while `proxy_buffers` specifies the size for subsequent chunks 
+- `proxy_buffer_size` specifies the size only for first chunk of response ; while `proxy_buffers` specifies the size for subsequent chunks
+#####  Limit on Connection
+- [`limit_conn_zone`](http://nginx.org/en/docs/http/ngx_http_limit_conn_module.html#limit_conn_zone) declares  **shared space** and **key**
+  - key : labels for separating different state data for different conditions. For example, separate by client IP address [`$binary_remote_addr`](http://nginx.org/en/docs/http/ngx_http_core_module.html#var_binary_remote_addr)
+  - shared space : maintain state data which is used to limit connections **per defined key**
+- For `limit_conn`, the *connection* in Nginx documentation could mean
+  - TCP connection, client with one IP may establish multiple TCP connections
+  - HTTP/2 request in a TCP connection, client may start multiple concurrent HTTP/2 requests in a single established TCP connection. (TODO, test this case)
+- In [the example above](#configuration)
+  - the server allows each IP to have at most 1 *connections* to the endpoint `/file`, denies others (if there's more) and respond with `429` in order NOT to exceed the limit.
+  - To know more about the behavior, you can
+    - Start a upstream server in debug mode, and add breakpoint somewhere in middle of handling the endpoint. This is for temporarily blocking first inbound connection in the upstream server when you establish the first connection (e.g. using tools like `curl`) and it comes to nginx server.
+    - At the time the first connection is blocked, you establish 2nd. connection to nginx server, the 2nd connection will be denied  by nginx due to the limit you specified (which is 1 in this example).
+ 
 
 #### TODO
 - Regex location might not be able to work with `proxy_pass` directive ?
@@ -287,10 +304,12 @@ sudo kill -SIGTERM  CURR_NGINX_PID
 * [Configure Nginx running with uWSGI](https://uwsgi-docs.readthedocs.io/en/latest/tutorials/Django_and_nginx.html#basic-nginx)
 * [How To Set Up uWSGI and Nginx to Serve Python Apps on Ubuntu 14.04](https://www.digitalocean.com/community/tutorials/how-to-set-up-uwsgi-and-nginx-to-serve-python-apps-on-ubuntu-14-04)
 * [Nginx full-example configuration](https://www.nginx.com/resources/wiki/start/topics/examples/full/)
+* [Avoiding the Top 10 NGINX Configuration Mistakes](https://www.nginx.com/blog/avoiding-top-10-nginx-configuration-mistakes/)
 * [A Guide to Caching with NGINX and NGINX Plus](https://www.nginx.com/blog/nginx-caching-guide/)
 * [Proxy vs. Reverse Proxy (Explained by Example)](https://www.youtube.com/watch?v=ozhe__GdWC8)
 * [Nginx HTTP load balancing](https://docs.nginx.com/nginx/admin-guide/load-balancer/http-load-balancer/)
 * [ServerFault - NGINX proxy cache time with Cache-Control](https://serverfault.com/questions/915463)
 * [curl issue -- openssl: support session resume with TLS 1.3](https://github.com/curl/curl/pull/3271)
 * [curl mail list thread -- TLS session ID re-use broken in 7.77.0](https://curl.se/mail/lib-2021-06/0016.html)
+* [ServerFault -- Nginx `limit_req_zone` limiting at a rate lower than specified](https://serverfault.com/questions/851750)
 
