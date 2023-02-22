@@ -99,7 +99,7 @@ sudo make install >& install.log
 ```
 
 ### Configuration
-Here is an example of reverse proxy server, it requires the module [vhost traffic status (nginx-module-vts)](https://github.com/vozlt/nginx-module-vts) built with the nginx server.
+Here is an example of reverse proxy server, I put all directives into one single file. It also requires extra module [vhost traffic status (nginx-module-vts)](https://github.com/vozlt/nginx-module-vts) built with the nginx server.
 
 ```nginx
 #user  OS_USER_NAME  OS_USER_GROUP;
@@ -128,6 +128,7 @@ http {
     proxy_cache_path  customdata/nJeeks/cache  levels=2:2  inactive=4m  use_temp_path=off  max_size=10m  keys_zone=zone_one:2m;
     
     limit_conn_zone  $binary_remote_addr  zone=mylmt_conns_state:1m;
+    limit_req_zone   $binary_remote_addr  zone=mylmt_reqs_state:2m rate=3r/s;
 
     upstream backend_app_345 {
         # could scale to serveral app servers
@@ -151,6 +152,8 @@ http {
         location /status {
             vhost_traffic_status_display;
             vhost_traffic_status_display_format html;
+            limit_req  zone=mylmt_reqs_state  burst=2;
+            limit_req_status  430;
         } ## TODO, authorization
 
         # Debug log file shows Nginx failed to open local file `/html/file`
@@ -178,7 +181,6 @@ http {
             limit_conn_status  429;
         } ## end of location block
     } # end of proxy server block
-
 
     # you might have another server group running in different setup
     upstream django_backend {
@@ -255,11 +257,36 @@ According to the configuration above, there are key factors which build up proxy
   - TCP connection, client with one IP may establish multiple TCP connections
   - HTTP/2 request in a TCP connection, client may start multiple concurrent HTTP/2 requests in a single established TCP connection. (TODO, test this case)
 - In [the example above](#configuration)
-  - the server allows each IP to have at most 1 *connections* to the endpoint `/file`, denies others (if there's more) and respond with `429` in order NOT to exceed the limit.
+  - the server allows each IP to have at most 1 *connection* to the endpoint `/file`, denies others (if there's more) and respond with `429` in order NOT to exceed the limit.
   - To know more about the behavior, you can
-    - Start a upstream server in debug mode, and add breakpoint somewhere in middle of handling the endpoint. This is for temporarily blocking first inbound connection in the upstream server when you establish the first connection (e.g. using tools like `curl`) and it comes to nginx server.
-    - At the time the first connection is blocked, you establish 2nd. connection to nginx server, the 2nd connection will be denied  by nginx due to the limit you specified (which is 1 in this example).
- 
+    - Start a upstream server in debug mode, add breakpoint somewhere in middle of handling the endpoint. When you establish the first connection (e.g. using tools like `curl`) and it comes to nginx server, it will be temporarily blocked at the upstream server.
+    - Now the first connection is stuck (at the upstream server), you establish 2nd. connection to nginx server, the 2nd connection will be denied  by the nginx due to the limit you specified (which is 1 in this example).
+#####  Limit on Request
+- [`limit_req_zone`](http://nginx.org/en/docs/http/ngx_http_limit_req_module.html#limit_req_zone) declares  **shared space**, **key**, (similar as `limit_conn_zone`) and **rate**
+  - rate, requests per second `r/s` or minute `r/m` at [layer 7](https://en.wikipedia.org/wiki/Application_layer)
+- If `r/s` is greater than 1, [`limit_req`](http://nginx.org/en/docs/http/ngx_http_limit_req_module.html#limit_req) has to be specified with argument `burst`.
+  - nginx worker seems to process only one request by default ([source](https://serverfault.com/questions/851750), TODO:verify), and respond with error for all other concurrent requests (even when it doesn't exceed the limit)
+  - `burst` means number of excessive inbound requests to queue, so the worker can handle them at a later time
+  - The current workaround is to specify `burst` to rate-limit value `r/s` minus 1
+- In [the example above](#configuration)
+  - the server allows each IP to have at most 3 *requests* to the endpoint `/status`, denies others (if there's more) and respond with `430` in order NOT to exceed the limit.
+  - To meet rate-limiting requirement, `burst` is set to `2` within `limit_req`
+  - To know more about the behavior, you can
+    -  send 10 concurrent HTTP requests to nginx using [load testing tools](https://www.reddit.com/r/devops/comments/39w336/) (for example I use [`h2load`](https://nghttp2.org/documentation/h2load-howto.html)) see the number of requests which are done successfully or failed.
+    -  following textual report is the result of `h2load` command after 10 concurrent requests are done.
+       ```
+       progress: 100% done
+       finished in 710.68ms, 14.07 req/s, 27.16KB/s
+       requests: 10 total, 10 started, 10 done, 3 succeeded, 7 failed, 0 errored, 0 timeout
+       status codes: 3 2xx, 0 3xx, 7 4xx, 0 5xx
+       traffic: 19.30KB (19765) total, 466B (466) headers (space savings 45.37%), 18.25KB (18692) data
+       min         max         mean         sd        +/- sd
+       time for request:     5.49ms    684.77ms    117.07ms    227.03ms    80.00%
+       time for connect:    11.05ms     44.56ms     29.07ms     10.96ms    60.00%
+       time to 1st byte:    43.63ms    708.85ms    146.38ms    222.95ms    80.00%
+       req/s           :       1.41       22.80       17.27        8.08    80.00%
+       ```
+
 
 #### TODO
 - Regex location might not be able to work with `proxy_pass` directive ?
@@ -267,6 +294,7 @@ According to the configuration above, there are key factors which build up proxy
 - `ssl_session_cache`:
   - official doc describes the directive works with session ticket of TLS v1.3, however it is NOT clear whether the nginx has to be after version 1.23.2
   - how to measure running time and benchmark the performance gain from the directive ??
+- Find out any method / directives for rate-limiting at [layer 4](https://en.wikipedia.org/wiki/Transport_layer)
 
 ### Load Balancing in Nginx
 #### Layer 7 (HTTP)
