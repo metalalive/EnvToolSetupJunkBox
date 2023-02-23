@@ -16,7 +16,7 @@ Relevant background knowledge:
 - [Forward proxy vs. reverse proxy (StackOverflow)](https://stackoverflow.com/questions/224664)
   - forward proxy:
     - `Px` acts on behalf of `A1` and talks to `A2`. `A2` doesn't know `A1`
-    - use case : some administrative authority (`Px`) controls `A1`'s internet access, so `A1` cannot directly talk to `A2`
+    - use case : some administrative authority (`Px`) controls `A1`'s internet access, or `Px` wants to protect identity of `A1`, so `A1` cannot directly talk to `A2`
   - reverse proxy:
     - `Px` acts on behalf of `A2` and talks to `A1`. `A1` doesn't know `A2`
     - use case : 
@@ -25,8 +25,24 @@ Relevant background knowledge:
         - response time of the file
       - add new computer (say `A20`) to serve some files and work in parallel with `A2`.
         - `A1` is NOT aware of 2 different computers serving files, since it only talks to `Px`
+  - ![diagram of proxying](https://i.stack.imgur.com/0qpxZ.png)
+- [Load balancing](https://en.wikipedia.org/wiki/Load_balancing_%28computing%29)
+  - Extend the example above, as you add more servers behind `Px`, you need to consider how to **effectively** distributes traffic load across **multiple servers**
+    - Avoid most of requests passed to a few servers (that may cause [network congestion](https://en.wikipedia.org/wiki/Network_congestion))
+  - [Another good explanation](https://www.reddit.com/r/explainlikeimfive/comments/1o5i6l)  for non-coding readers
+  - A device doing this is called **load balancer**, which can be viewed as one use case of **reverse proxy**
+  - Types of load balancer:
+    - hardware load balancer (e.g. [F5 Big-IP ADC](https://www.f5.com/services/resources/datasheets) for IP routing)
+    - software load balancer (e.g. Nginx)
+    - Layer 4 (TCP/UDP) and Layer 7 (HTTP), distribute requests at network layer 4 and 7 respectively
+      - more reference data (e.g. HTTP headers, URI, cookies) for routing at layer 7, but the data needs to be decrypted if [TLS](https://en.wikipedia.org/wiki/Transport_Layer_Security) is applied
+      - less reference data (e.g. only IP, port) for routing at layer 4, no need to decrypt the data, (TODO, there should be more disadvantages)
+  - pros
+    - increase reliability of the system, e.g. one server is down, another server will be ready to work
+    - optimize utilization of the servers
+  - cons (TODO)
+  - ALgorithms (TODO)
 
-![diagram of proxying](https://i.stack.imgur.com/0qpxZ.png)
 
 ### Nginx version
 1.23.3
@@ -358,6 +374,7 @@ sudo kill -SIGTERM  CURR_NGINX_PID
 * [Avoiding the Top 10 NGINX Configuration Mistakes](https://www.nginx.com/blog/avoiding-top-10-nginx-configuration-mistakes/)
 * [A Guide to Caching with NGINX and NGINX Plus](https://www.nginx.com/blog/nginx-caching-guide/)
 * [Proxy vs. Reverse Proxy (Explained by Example)](https://www.youtube.com/watch?v=ozhe__GdWC8)
+* [Proxy vs. Reverse Proxy (ByteByteGo)](https://www.youtube.com/watch?v=4NB0NDtOwIQ)
 * [Nginx HTTP load balancing](https://docs.nginx.com/nginx/admin-guide/load-balancer/http-load-balancer/)
 * [ServerFault - NGINX proxy cache time with Cache-Control](https://serverfault.com/questions/915463)
 * [curl issue -- openssl: support session resume with TLS 1.3](https://github.com/curl/curl/pull/3271)
