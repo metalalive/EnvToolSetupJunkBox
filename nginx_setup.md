@@ -149,11 +149,18 @@ http {
         ssl_protocols   TLSv1.3  TLSv1.2;
         ssl_session_timeout   6m;
         
+        location ~ \.jpg$ {
+            limit_rate   17k;
+        }
+        
         location /status {
             vhost_traffic_status_display;
             vhost_traffic_status_display_format html;
             limit_req  zone=mylmt_reqs_state  burst=2;
             limit_req_status  430;
+            allow  123.4.56.78;
+            allow  127.0.0.1;
+            deny   all;
         } ## TODO, authorization
 
         # Debug log file shows Nginx failed to open local file `/html/file`
@@ -222,7 +229,7 @@ According to the configuration above, there are key factors which build up proxy
 
 - `proxy_ssl_certificate` and `proxy_ssl_certificate_key` are the cert and key respectively applied between the proxy server and upstream backend app server.
 - In `proxy_pass`, you can also specify upstream label (in this example, it is `backend_app_345`) , which passes the request to one of the sevrers in the upstream block.
-##### Caching
+#### Caching
 - Use case : popular response, not frequently changed / modified
 - `proxy_cache_path`
   - `keys_zone` specifies :
@@ -244,12 +251,14 @@ According to the configuration above, there are key factors which build up proxy
     - otherwise, if directives `no-cache`, `private` are specified in the header, nginx will NOT cache the response body.
 - `proxy_no_cache` makes nginx NOT cache the response if `$WHATEVER_VARIABLE` is either an non-empty string or non-zero number,
 - For `proxy_cache_valid` vs. `inactive` in `proxy_cache_path`, see [this StackOverflow thread](https://stackoverflow.com/questions/64151378/).
-##### Buffering
+#### Buffering
 - Use case: Slow client downloading chunks of response data (synchronously) from the proxy server
 - `proxy_buffering`, turned on by default
 - the size argument in `proxy_buffers` and `proxy_buffer_size` defaults to memory page size of the OS (4KB | 8KB)
 - `proxy_buffer_size` specifies the size only for first chunk of response ; while `proxy_buffers` specifies the size for subsequent chunks
-#####  Limit on Connection
+
+###  Limit in Nginx
+####  Limit on Connection
 - [`limit_conn_zone`](http://nginx.org/en/docs/http/ngx_http_limit_conn_module.html#limit_conn_zone) declares  **shared space** and **key**
   - key : labels for separating different state data for different conditions. For example, separate by client IP address [`$binary_remote_addr`](http://nginx.org/en/docs/http/ngx_http_core_module.html#var_binary_remote_addr)
   - shared space : maintain state data which is used to limit connections **per defined key**
@@ -261,7 +270,7 @@ According to the configuration above, there are key factors which build up proxy
   - To know more about the behavior, you can
     - Start a upstream server in debug mode, add breakpoint somewhere in middle of handling the endpoint. When you establish the first connection (e.g. using tools like `curl`) and it comes to nginx server, it will be temporarily blocked at the upstream server.
     - Now the first connection is stuck (at the upstream server), you establish 2nd. connection to nginx server, the 2nd connection will be denied  by the nginx due to the limit you specified (which is 1 in this example).
-#####  Limit on Request
+####  Limit on Request
 - [`limit_req_zone`](http://nginx.org/en/docs/http/ngx_http_limit_req_module.html#limit_req_zone) declares  **shared space**, **key**, (similar as `limit_conn_zone`) and **rate**
   - rate, requests per second `r/s` or minute `r/m` at [layer 7](https://en.wikipedia.org/wiki/Application_layer)
 - If `r/s` is greater than 1, [`limit_req`](http://nginx.org/en/docs/http/ngx_http_limit_req_module.html#limit_req) has to be specified with argument `burst`.
@@ -275,26 +284,31 @@ According to the configuration above, there are key factors which build up proxy
     -  send 10 concurrent HTTP requests to nginx using [load testing tools](https://www.reddit.com/r/devops/comments/39w336/) (for example I use [`h2load`](https://nghttp2.org/documentation/h2load-howto.html)) see the number of requests which are done successfully or failed.
     -  following textual report is the result of `h2load` command after 10 concurrent requests are done.
        ```
+       ./h2load --requests=10 --clients=10  --verbose  https://localhost:8050/status
+       .... skip handshake detail ....
        progress: 100% done
        finished in 710.68ms, 14.07 req/s, 27.16KB/s
        requests: 10 total, 10 started, 10 done, 3 succeeded, 7 failed, 0 errored, 0 timeout
        status codes: 3 2xx, 0 3xx, 7 4xx, 0 5xx
        traffic: 19.30KB (19765) total, 466B (466) headers (space savings 45.37%), 18.25KB (18692) data
-       min         max         mean         sd        +/- sd
-       time for request:     5.49ms    684.77ms    117.07ms    227.03ms    80.00%
-       time for connect:    11.05ms     44.56ms     29.07ms     10.96ms    60.00%
-       time to 1st byte:    43.63ms    708.85ms    146.38ms    222.95ms    80.00%
-       req/s           :       1.41       22.80       17.27        8.08    80.00%
        ```
+#### Limit network bandwidth
+- [The example above](#configuration) specifies a limit `limit_rate` on `17k` bytes to transmit per second when downloading any JPG image.
+- Assume you download a picture `/xyz.jpg` using HTTP test tool (e.g. `curl`,`h2load`), you will see the average bandwidth will be approximate `17k` (I use `h2load` at here) :
+  ```
+  ./h2load --requests=1 --clients=1  --verbose  https://localhost:8050/xyz.jpg
+  .... skip handshake detail ....
+  progress: 100% done
+  finished in 9.07s, 0.11 req/s, 17.63KB/s
+  requests: 1 total, 1 started, 1 done, 1 succeeded, 0 failed, 0 errored, 0 timeout
+  status codes: 1 2xx, 0 3xx, 0 4xx, 0 5xx
+  traffic: 159.93KB (163769) total, 113B (113) headers (space savings 38.25%), 159.52KB (163346) data
+  ```
+#### Access Control
+- In [the example above](#configuration), to access the endpoint `/status` :
+  - the server accepts reqeusts form the 2 IP addresses `123.4.56.78` and `127.0.0.1`, by directive [`allow`](http://nginx.org/en/docs/http/ngx_http_access_module.html#allow)
+  - then rejects requests from all other IP addresses by derictive [`deny`](http://nginx.org/en/docs/http/ngx_http_access_module.html#deny)
 
-
-#### TODO
-- Regex location might not be able to work with `proxy_pass` directive ?
-- if `no-cache` is present in the header `cache-control`, does `proxy_no_cache` still take effect ?
-- `ssl_session_cache`:
-  - official doc describes the directive works with session ticket of TLS v1.3, however it is NOT clear whether the nginx has to be after version 1.23.2
-  - how to measure running time and benchmark the performance gain from the directive ??
-- Find out any method / directives for rate-limiting at [layer 4](https://en.wikipedia.org/wiki/Transport_layer)
 
 ### Load Balancing in Nginx
 #### Layer 7 (HTTP)
@@ -324,6 +338,15 @@ alternatively you can kill the process of nginx instance by the process ID
 cat  logs/nginx.pid
 sudo kill -SIGTERM  CURR_NGINX_PID
 ```
+
+### TODO
+- Regex location might not be able to work with `proxy_pass` directive ?
+- if `no-cache` is present in the header `cache-control`, does `proxy_no_cache` still take effect ?
+- `ssl_session_cache`:
+  - official doc describes the directive works with session ticket of TLS v1.3, however it is NOT clear whether the nginx has to be after version 1.23.2
+  - how to measure running time and benchmark the performance gain from the directive ??
+- Find out any method / directives for rate-limiting at [layer 4](https://en.wikipedia.org/wiki/Transport_layer)
+- Try [Dynamic bandwidth control](https://docs.nginx.com/nginx/admin-guide/security-controls/controlling-access-proxied-http/#dynamic-bandwidth-control)
 
 ### Reference
 * [Build Nginx from source -- MatthewVance](https://github.com/MatthewVance/nginx-build/blob/master/build-nginx.sh)
