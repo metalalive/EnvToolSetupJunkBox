@@ -1,56 +1,7 @@
 ### Use cases
-- reverse proxy
+- [reverse proxy](https://hackmd.io/mvpoXzPpTf-1CemJxk0OFw#Proxy)
 - content caching (e.g. popular PDF files, video/audio segments)
-- Load balancing
-
-Relevant background knowledge:
-- [Proxy](https://security.stackexchange.com/questions/189088)
-  - something acting on behalf of something else;
-    - the 3rd computer (say `Px`) sits in between 2 computers (say `A1` and `A2`).
-    - for example : `A1` requests a file in `A2`
-  - normally, `A1` and `A2` communicate directly with each other without `Px`
-  - in some cases, proxy `Px` is a better option :
-    - some files are so popular, large traffic volume is flooding in to `A2`
-    - too many files to serve in one single computer `A2`
-    - security concern, `A1` doesn't know about `A2` (trusted or malicious) and vice versa.
-- [Forward proxy vs. reverse proxy (StackOverflow)](https://stackoverflow.com/questions/224664)
-  - forward proxy:
-    - `Px` acts on behalf of `A1` and talks to `A2`. `A2` doesn't know `A1`
-    - use case : some administrative authority (`Px`) controls `A1`'s internet access, or `Px` wants to protect identity of `A1`, so `A1` cannot directly talk to `A2`
-  - reverse proxy:
-    - `Px` acts on behalf of `A2` and talks to `A1`. `A1` doesn't know `A2`
-    - use case : 
-      - cache popular files from `A2` to `Px`, then `A1` requests a popular file in `Px`, this can reduce:
-        - traffic volume to `A2`
-        - response time of the file
-      - add new computer (say `A20`) to serve some files and work in parallel with `A2`.
-        - `A1` is NOT aware of 2 different computers serving files, since it only talks to `Px`
-  - ![diagram of proxying](https://i.stack.imgur.com/0qpxZ.png)
-- [Load balancing](https://en.wikipedia.org/wiki/Load_balancing_%28computing%29)
-  - Extend the example above, as you add more servers behind `Px`, you need to consider how to **effectively** distributes traffic load across **multiple servers**
-    - Avoid most of requests passed to a few servers (that may cause [network congestion](https://en.wikipedia.org/wiki/Network_congestion))
-  - [Another good explanation](https://www.reddit.com/r/explainlikeimfive/comments/1o5i6l)  for non-coding readers
-  - A device doing this is called **load balancer**, which can be viewed as one use case of **reverse proxy**
-  - Types of load balancer:
-    - hardware load balancer, specialized devices / chips (e.g. [F5 Big-IP ADC](https://www.f5.com/services/resources/datasheets) for IP routing)
-    - software load balancer (e.g. Nginx)
-    - [Layer 4](https://www.nginx.com/resources/glossary/layer-4-load-balancing/) (e.g. TCP, UDP)
-      - less data is referred (e.g. src/dst IP or port) for routing decision
-      - Don't inspect detail at layer 7, no need to decrypt the data even if [TLS](https://en.wikipedia.org/wiki/Transport_Layer_Security) is applied
-      - It performs [Network Address Translation](https://en.wikipedia.org/wiki/Network_address_translation). Assume `Px` passes a request from `A1` to `A2`, then here is what `Px` can do :
-        - change dst IP (`Px`) to `A2`'s IP in the request, before forwarding the request to `A2`
-        - change src IP (`A2`) to `Px`'s IP in the request, before forwarding the response to `A1`
-      - (TODO, there might be more disadvantages)
-    - Layer 7 (e.g. HTTP, gRPC)
-      - more data is referred (e.g. HTTP headers, URI, cookies) for routing decision
-      - the data has to be decrypted, and might be **encrypted again** origin servers only allows secure connection, expensive in terms of conputation time.
-      - security, share the certificate between load balancer and origin server.
-  - pros
-    - increase reliability of the system, e.g. one server is down, another server will be ready to work
-    - optimize utilization of the servers
-  - cons (TODO)
-  - ALgorithms (TODO)
-
+- [Load balancing](https://hackmd.io/mvpoXzPpTf-1CemJxk0OFw#Load-balancing)
 
 ### Nginx version
 1.23.3
@@ -156,8 +107,8 @@ http {
 
     upstream backend_app_345 {
         # could scale to serveral app servers
-        server localhost:8010  max_conns=31  max_fails=3 fail_timeout=7s  weight=3; # label orig1
-        server localhost:8011  max_conns=38  max_fails=3 fail_timeout=8s  weight=5; # label orig2
+        server localhost:8010  max_conns=31  max_fails=3 fail_timeout=7s  weight=3;
+        server localhost:8011  max_conns=38  max_fails=3 fail_timeout=8s  weight=5;
         keepalive   10;
     } # all the servers at here should use the same settings ?
     
@@ -335,10 +286,12 @@ According to the configuration above, there are key factors which build up proxy
 
 
 ### Load Balancing in Nginx
+Note:
+- the term **upstream server** and **origin server** are interchangable in this section
 #### Layer 7 (HTTP)
-- [`upstream`](https://nginx.org/en/docs/http/ngx_http_upstream_module.html#upstream) directive indicates attributes for a group of origin servers
+- [`upstream`](https://nginx.org/en/docs/http/ngx_http_upstream_module.html#upstream) directive defines a group of origin servers the Nginx server will pass client requests to.
 - In [the example above](#configuration) there are 2 origin servers `localhost:8010` and `localhost:8011` in the block
-- the default algorithm for load balancing is [round-robin](https://docs.nginx.com/nginx/admin-guide/load-balancer/http-load-balancer/#choosing-a-load-balancing-method), it works with parameter `weight` in [`server`](https://nginx.org/en/docs/http/ngx_http_upstream_module.html#server) directive
+- the default algorithm for load balancing is [round-robin](https://docs.nginx.com/nginx/admin-guide/load-balancer/http-load-balancer/#choosing-a-load-balancing-method), it works with parameter `weight` in [`server`](https://nginx.org/en/docs/http/ngx_http_upstream_module.html#server) block
   - the server `localhost:8010` (say `orig1`) has weight set to `3`
   - `localhost:8011` (say `orig2`) has weight set to `5`
   - The time series of the 2 origin servers receiving request will be like :
@@ -347,6 +300,24 @@ According to the configuration above, there are key factors which build up proxy
     ```
   - nginx tries to distribute evenly to the origin servers, with respect to the weight parameters
     - In every 8 requests, `orig2` receives `5` requests and `orig1` receives `3`.
+- `max_fails` and `fail_timeout` usually work together as [passive health check](https://docs.nginx.com/nginx/admin-guide/load-balancer/http-health-check/#passive-health-checks) 
+  - For example, the server `localhost:8010` has `max_fails = 3` and `fail_timeout = 7s`
+  - Assume the server `localhost:8010` is down and failed to process `3` requests in `7` seconds
+  - Nginx marks `localhost:8010` as *unavailable*. (say at the time `T0`), meanwhile it tries to pass the `3rd` request to differnt origin sevrer (might be `localhost:8011`).
+  - From here, the Nginx temporarily passes new requests to other upstream servers except `localhost:8010`  for another `7` seconds, until the timeout occures (at the time `T0 + 7`), then Nginx retries sending a request to `localhost:8010`:
+    -  if `localhost:8010` is restarted and able to handle request, then mark it as *active*
+    -  otherwise Nginx repeats the same behavior, distributes requests to other upstream servers except `localhost:8010` until next timeout.
+  - Nginx logs error message as soon as it failed to send a request to any origin server :
+    ```
+    2023/02/22 15:34:20 [error] 9814#9814: *7 connect() failed (111: Connection refused) while connecting to upstream, client: 127.0.0.1, server:
+    localhost, request: "GET /file?xxx_id=987  HTTP/2.0", upstream: "https://127.0.0.1:8010/file?xxx_id=987", host: "localhost:8050"
+    ```
+  - Nginx logs warning message after it marked an origin server as  *unavailable* :
+    ```
+    2023/02/22 15:38:20 [warn] 9814#9814: *21 upstream server temporarily disabled while connecting to upstream, client: 127.0.0.1, server:
+    localhost, request: "GET /file?xxx_id=987  HTTP/2.0", upstream: "https://127.0.0.1:8010/file?xxx_id=987", host: "localhost:8050"
+    ```
+
 
 #### Layer 4 (TCP/UDP)
 (TODO)
@@ -386,6 +357,7 @@ sudo kill -SIGTERM  CURR_NGINX_PID
 - Try [Dynamic bandwidth control](https://docs.nginx.com/nginx/admin-guide/security-controls/controlling-access-proxied-http/#dynamic-bandwidth-control)
 - try different load-balancing methods (except default round-robin)
 - try `resolver` directive for DNS lookup
+- try [active health check](https://docs.nginx.com/nginx/admin-guide/load-balancer/http-health-check/#active-health-checks), which is not in open source version
 
 ### Reference
 * [Build Nginx from source -- MatthewVance](https://github.com/MatthewVance/nginx-build/blob/master/build-nginx.sh)
