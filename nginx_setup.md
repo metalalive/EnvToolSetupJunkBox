@@ -32,11 +32,19 @@ Relevant background knowledge:
   - [Another good explanation](https://www.reddit.com/r/explainlikeimfive/comments/1o5i6l)  for non-coding readers
   - A device doing this is called **load balancer**, which can be viewed as one use case of **reverse proxy**
   - Types of load balancer:
-    - hardware load balancer (e.g. [F5 Big-IP ADC](https://www.f5.com/services/resources/datasheets) for IP routing)
+    - hardware load balancer, specialized devices / chips (e.g. [F5 Big-IP ADC](https://www.f5.com/services/resources/datasheets) for IP routing)
     - software load balancer (e.g. Nginx)
-    - Layer 4 (TCP/UDP) and Layer 7 (HTTP), distribute requests at network layer 4 and 7 respectively
-      - more reference data (e.g. HTTP headers, URI, cookies) for routing at layer 7, but the data needs to be decrypted if [TLS](https://en.wikipedia.org/wiki/Transport_Layer_Security) is applied
-      - less reference data (e.g. only IP, port) for routing at layer 4, no need to decrypt the data, (TODO, there should be more disadvantages)
+    - [Layer 4](https://www.nginx.com/resources/glossary/layer-4-load-balancing/) (e.g. TCP, UDP)
+      - less data is referred (e.g. src/dst IP or port) for routing decision
+      - Don't inspect detail at layer 7, no need to decrypt the data even if [TLS](https://en.wikipedia.org/wiki/Transport_Layer_Security) is applied
+      - It performs [Network Address Translation](https://en.wikipedia.org/wiki/Network_address_translation). Assume `Px` passes a request from `A1` to `A2`, then here is what `Px` can do :
+        - change dst IP (`Px`) to `A2`'s IP in the request, before forwarding the request to `A2`
+        - change src IP (`A2`) to `Px`'s IP in the request, before forwarding the response to `A1`
+      - (TODO, there might be more disadvantages)
+    - Layer 7 (e.g. HTTP, gRPC)
+      - more data is referred (e.g. HTTP headers, URI, cookies) for routing decision
+      - the data has to be decrypted, and might be **encrypted again** origin servers only allows secure connection, expensive in terms of conputation time.
+      - security, share the certificate between load balancer and origin server.
   - pros
     - increase reliability of the system, e.g. one server is down, another server will be ready to work
     - optimize utilization of the servers
@@ -148,8 +156,8 @@ http {
 
     upstream backend_app_345 {
         # could scale to serveral app servers
-        server localhost:8010  max_conns=31;
-        server localhost:8011  max_conns=38;
+        server localhost:8010  max_conns=31  max_fails=3 fail_timeout=7s  weight=3; # label orig1
+        server localhost:8011  max_conns=38  max_fails=3 fail_timeout=8s  weight=5; # label orig2
         keepalive   10;
     } # all the servers at here should use the same settings ?
     
@@ -244,7 +252,7 @@ http {
 According to the configuration above, there are key factors which build up proxy server:
 
 - `proxy_ssl_certificate` and `proxy_ssl_certificate_key` are the cert and key respectively applied between the proxy server and upstream backend app server.
-- In `proxy_pass`, you can also specify upstream label (in this example, it is `backend_app_345`) , which passes the request to one of the sevrers in the upstream block.
+- In `proxy_pass`, you can also specify upstream label (in this example, it is `backend_app_345`) , which passes the request to one of the sevrers in the [upstream block]().
 #### Caching
 - Use case : popular response, not frequently changed / modified
 - `proxy_cache_path`
@@ -328,7 +336,20 @@ According to the configuration above, there are key factors which build up proxy
 
 ### Load Balancing in Nginx
 #### Layer 7 (HTTP)
+- [`upstream`](https://nginx.org/en/docs/http/ngx_http_upstream_module.html#upstream) directive indicates attributes for a group of origin servers
+- In [the example above](#configuration) there are 2 origin servers `localhost:8010` and `localhost:8011` in the block
+- the default algorithm for load balancing is [round-robin](https://docs.nginx.com/nginx/admin-guide/load-balancer/http-load-balancer/#choosing-a-load-balancing-method), it works with parameter `weight` in [`server`](https://nginx.org/en/docs/http/ngx_http_upstream_module.html#server) directive
+  - the server `localhost:8010` (say `orig1`) has weight set to `3`
+  - `localhost:8011` (say `orig2`) has weight set to `5`
+  - The time series of the 2 origin servers receiving request will be like :
+    ```
+     orig2, orig1, orig2, orig1, orig2, orig2, orig1, orig2
+    ```
+  - nginx tries to distribute evenly to the origin servers, with respect to the weight parameters
+    - In every 8 requests, `orig2` receives `5` requests and `orig1` receives `3`.
+
 #### Layer 4 (TCP/UDP)
+(TODO)
 
 ### Run
 Go to `/PATH/TO/YOUR/SERVER/SETUP_FOLDER` run the command :
@@ -363,6 +384,8 @@ sudo kill -SIGTERM  CURR_NGINX_PID
   - how to measure running time and benchmark the performance gain from the directive ??
 - Find out any method / directives for rate-limiting at [layer 4](https://en.wikipedia.org/wiki/Transport_layer)
 - Try [Dynamic bandwidth control](https://docs.nginx.com/nginx/admin-guide/security-controls/controlling-access-proxied-http/#dynamic-bandwidth-control)
+- try different load-balancing methods (except default round-robin)
+- try `resolver` directive for DNS lookup
 
 ### Reference
 * [Build Nginx from source -- MatthewVance](https://github.com/MatthewVance/nginx-build/blob/master/build-nginx.sh)
@@ -380,4 +403,5 @@ sudo kill -SIGTERM  CURR_NGINX_PID
 * [curl issue -- openssl: support session resume with TLS 1.3](https://github.com/curl/curl/pull/3271)
 * [curl mail list thread -- TLS session ID re-use broken in 7.77.0](https://curl.se/mail/lib-2021-06/0016.html)
 * [ServerFault -- Nginx `limit_req_zone` limiting at a rate lower than specified](https://serverfault.com/questions/851750)
+* [Nginx config generator -- Digital Ocean](https://www.digitalocean.com/community/tools/nginx)
 
