@@ -1,7 +1,7 @@
 ### Use cases
-- [reverse proxy](https://hackmd.io/mvpoXzPpTf-1CemJxk0OFw#Proxy)
+- [reverse proxy](https://hackmd.io/@0V3cv8JJRnuK3jMwbJ-EeA/SJF5JD8Ao#Proxy)
 - content caching (e.g. popular PDF files, video/audio segments)
-- [Load balancing](https://hackmd.io/mvpoXzPpTf-1CemJxk0OFw#Load-balancing)
+- [Load balancing](https://hackmd.io/@0V3cv8JJRnuK3jMwbJ-EeA/SJF5JD8Ao#Load-balancing)
 
 ### Nginx version
 1.23.3
@@ -368,8 +368,6 @@ sudo kill -SIGTERM  CURR_NGINX_PID
 * [Nginx full-example configuration](https://www.nginx.com/resources/wiki/start/topics/examples/full/)
 * [Avoiding the Top 10 NGINX Configuration Mistakes](https://www.nginx.com/blog/avoiding-top-10-nginx-configuration-mistakes/)
 * [A Guide to Caching with NGINX and NGINX Plus](https://www.nginx.com/blog/nginx-caching-guide/)
-* [Proxy vs. Reverse Proxy (Explained by Example)](https://www.youtube.com/watch?v=ozhe__GdWC8)
-* [Proxy vs. Reverse Proxy (ByteByteGo)](https://www.youtube.com/watch?v=4NB0NDtOwIQ)
 * [Nginx HTTP load balancing](https://docs.nginx.com/nginx/admin-guide/load-balancer/http-load-balancer/)
 * [ServerFault - NGINX proxy cache time with Cache-Control](https://serverfault.com/questions/915463)
 * [curl issue -- openssl: support session resume with TLS 1.3](https://github.com/curl/curl/pull/3271)
