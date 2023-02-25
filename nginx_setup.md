@@ -101,6 +101,10 @@ http {
     
     # the path has to be present (created by OS_USER_NAME) before starting the server
     proxy_cache_path  customdata/nJeeks/cache  levels=2:2  inactive=4m  use_temp_path=off  max_size=10m  keys_zone=zone_one:2m;
+    proxy_cache_lock_timeout  11s;
+    proxy_cache_lock_age      10s;
+    proxy_read_timeout        53s;
+    proxy_send_timeout        47s;
     
     limit_conn_zone  $binary_remote_addr  zone=mylmt_conns_state:1m;
     limit_req_zone   $binary_remote_addr  zone=mylmt_reqs_state:2m rate=3r/s;
@@ -161,6 +165,8 @@ http {
             proxy_buffers    7  9k;
             limit_conn  mylmt_conns_state  1;
             limit_conn_status  429;
+            proxy_cache_lock  on;
+            proxy_cache_use_stale   error timeout updating;
         } ## end of location block
     } # end of proxy server block
 
@@ -203,7 +209,8 @@ http {
 According to the configuration above, there are key factors which build up proxy server:
 
 - `proxy_ssl_certificate` and `proxy_ssl_certificate_key` are the cert and key respectively applied between the proxy server and upstream backend app server.
-- In `proxy_pass`, you can also specify upstream label (in this example, it is `backend_app_345`) , which passes the request to one of the sevrers in the [upstream block]().
+- In `proxy_pass`, you can also specify upstream label (in this example, it is `backend_app_345`) , which passes the request to one of the sevrers in the [upstream block](https://nginx.org/en/docs/http/ngx_http_upstream_module.html#upstream).
+- `proxy_read_timeout` and `proxy_send_timeout` indicates timeout seconds (in the example above, `53` and `47`) between 2 successive reads / writes respectively at layer 4 packet (TCP / UDP) [(reference)](https://stackoverflow.com/q/70824741/9853105)
 #### Caching
 - Use case : popular response, not frequently changed / modified
 - `proxy_cache_path`
@@ -231,6 +238,71 @@ According to the configuration above, there are key factors which build up proxy
 - `proxy_buffering`, turned on by default
 - the size argument in `proxy_buffers` and `proxy_buffer_size` defaults to memory page size of the OS (4KB | 8KB)
 - `proxy_buffer_size` specifies the size only for first chunk of response ; while `proxy_buffers` specifies the size for subsequent chunks
+#### Lock
+- `proxy_cache_lock` enables / disables lock on a cache element with the key specified according to `proxy_cache_key`, that ensures:
+  - When several reqeusts attempt to populate (create) a new cache element
+    - there's only one of them (say the 1st request) succeeded to do so, and pass the request to origin server
+    - the others have to wait (*maybe blocking*) for the cache element created / ready.
+  - timeout might occur after few seconds specified in `proxy_cache_lock_timeout` or `proxy_cache_lock_age`
+- `proxy_cache_lock_timeout`, on occurrence of the timeout:
+  - nginx passes the 2nd request, and **NOT cache the response of the 2nd request**
+  - it still waits for caching response of the 1st request
+- `proxy_cache_lock_age`, on occurrence of the timeout:
+  - nginx passes the 2nd request and **cache the response of the 2nd request**
+- For example, assume `limit_conn = 10`, and no cached response in nginx server. After `10` concurrent requests (to the same resource, the same cache key) completed, the result looks like :
+  ```shell
+  > ./h2load --requests=10 --clients=10  --verbose  https://localhost:8050/file?xxx_id=98760
+  starting benchmark...
+  spawning thread #0: 10 total client(s). 10 total requests
+  Application protocol: h2
+  [stream_id=1] :status: 200
+  [stream_id=1] server: nginx/1.23.3
+  [stream_id=1] date: Sat, 25 Feb 2023 14:54:47 GMT
+  [stream_id=1] content-type: application/octet-stream
+  [stream_id=1] cache-control: max-age=60
+  [stream_id=1] x-cache-status: MISS
+  progress: 10% done
+  [stream_id=1] :status: 200
+  [stream_id=1] server: nginx/1.23.3
+  [stream_id=1] date: Sat, 25 Feb 2023 14:54:47 GMT
+  [stream_id=1] content-type: application/octet-stream
+  [stream_id=1] cache-control: max-age=60
+  [stream_id=1] x-cache-status: HIT
+  progress: 20% done
+  ..... rest of 8 responses will be the same, cache hit .....
+  finished in 1.62s, 6.17 req/s, 1.73MB/s
+  requests: 10 total, 10 started, 10 done, 10 succeeded, 0 failed, 0 errored, 0 timeout
+  status codes: 10 2xx, 0 3xx, 0 4xx, 0 5xx
+  ```
+  the 1st request completed with the header `x-cache-status: MISS`, which means it was passed to upstream server and the response was cached at here; while other 9 requests were blocking until the cached response was ready, then they responded with the cached data and the header `x-cache-status: HIT`
+  
+- Again with the example, except the cached response expired. After `10` concurrent requests completed, the result looks like :
+  ```shell
+  > ./h2load --requests=10 --clients=10  --verbose  https://localhost:8050/file?xxx_id=98760
+  starting benchmark...
+  spawning thread #0: 10 total client(s). 10 total requests
+  Application protocol: h2
+  [stream_id=1] :status: 200
+  [stream_id=1] server: nginx/1.23.3
+  [stream_id=1] date: Sat, 25 Feb 2023 14:56:57 GMT
+  [stream_id=1] content-type: application/octet-stream
+  [stream_id=1] cache-control: max-age=60
+  [stream_id=1] x-cache-status: UPDATING
+  progress: 10% done
+  ..... rest of 8 responses will be the same, return stale cache data .....
+  progress: 90% done
+  [stream_id=1] :status: 200
+  [stream_id=1] server: nginx/1.23.3
+  [stream_id=1] date: Sat, 25 Feb 2023 14:56:58 GMT
+  [stream_id=1] content-type: application/octet-stream
+  [stream_id=1] cache-control: max-age=60
+  [stream_id=1] x-cache-status: EXPIRED
+  progress: 100% done
+  finished in 723.49ms, 13.82 req/s, 3.87MB/s
+  requests: 10 total, 10 started, 10 done, 10 succeeded, 0 failed, 0 errored, 0 timeout
+  status codes: 10 2xx, 0 3xx, 0 4xx, 0 5xx
+  ```
+  The first 9 requests arrived when nginx was still updating the stale cached data, because `proxy_cache_use_stale` is specified with `updating` option, so they responded with the stale cached data and the header `x-cache-status: UPDATING`; the last request got new cached response and the header `x-cache-status: EXPIRE`.
 
 ###  Limit in Nginx
 ####  Limit on Connection
@@ -374,4 +446,4 @@ sudo kill -SIGTERM  CURR_NGINX_PID
 * [curl mail list thread -- TLS session ID re-use broken in 7.77.0](https://curl.se/mail/lib-2021-06/0016.html)
 * [ServerFault -- Nginx `limit_req_zone` limiting at a rate lower than specified](https://serverfault.com/questions/851750)
 * [Nginx config generator -- Digital Ocean](https://www.digitalocean.com/community/tools/nginx)
-
+* [Nginx Cookbook, chapter 4 - Massively Scalable Content Caching (trial)](https://www.oreilly.com/library/view/nginx-cookbook/9781492078470/ch04.html)
