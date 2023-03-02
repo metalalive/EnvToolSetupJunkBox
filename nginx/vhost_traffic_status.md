@@ -1,11 +1,13 @@
 ## Concept
+### traffic log data
+- minimal information to represent network usage at current moment 
 ### Memory zone
 - specified by `vhost_traffic_status_zone`, shared among all worker processes
-- keeps collected data for different [user-defined conditions](#filter)
+- keep traffic log data for different [user-defined conditions](#filter)
 - automatically adjusted its size when more keys are added.
 ### Filter
 - user-defined condition (in a http/server/location block), specified using directives like `vhost_traffic_status_filter_by_set_key`
-- split entire collected data to different subsets, based on the condition
+- split entire traffic log data to different subsets, based on the condition
 - dump necessary information under the specific condition
 - For example, the condition could be :
   - status code of HTTP response, `$status` e.g. to group the traffic data to several subsets, each of them (e.g. `200`, `201`, `404`), e.g. your application server returns codes 
@@ -14,7 +16,9 @@
 ### Server
 - by default, [`nginx-module-vts`](https://github.com/vozlt/nginx-module-vts) is able to dump necessary traffic data for specific server blocks (the `server_name` directives)
 ### Group
-- or group label (TODO)
+- type for subsets of traffic log data
+- **server group** : split entire log data to subsets, by [server block](https://www.nginx.com/resources/wiki/start/topics/examples/server_blocks/)
+- **filter group** : split entire log data to subsets, by [filter](#filter)
 
 ## Configuration
 See [this](./core_setup.md#configuration) for detail. In the rest of this study note I will explain how this module works using the configuration example.
@@ -24,9 +28,9 @@ One filter is defined in the location block `/file`:
 ```
 vhost_traffic_status_filter_by_set_key   $uri   $upstream_addr::non-stream-file::*;
 ```
-### `vhost_traffic_status_filter_by_set_key`
-- the `key` argument is **the condition for partitions** (on enture status data), which can be either *nginx variable* or *constant string*
-- the `name` argument is a **group label** , which can be mix of *nginx variable* and *constant string*. e.g. `$upstream_addr::non-stream-file::*`
+### [`vhost_traffic_status_filter_by_set_key`](https://github.com/vozlt/nginx-module-vts/#vhost_traffic_status_filter_by_set_key)
+- the `key` argument determines **whether to log traffic data of current request**, which can be either *nginx variable* or *constant string*
+- the `name` argument represents a **filter group** , which can be mix of *nginx variable* and *constant string*. e.g. `$upstream_addr::non-stream-file::*`
 - note that `$uri` represents the path without **query parameter string**
   - e.g. URI is `/mycard/yesno?xxxid=98765`, the `$uri` after nginx relosion will be `/mycard/yesno`
 - to fetch query parameter string as a variable, use `$query_string` instead
@@ -69,7 +73,7 @@ Assume an client attempts to request for a non-existing file in the origin serve
 ```
 curl  --write-out @/path/to/performance.log -v  "https://localhost:8050/file?xxx_id=non-exist-res-identity"
 ```
-assume the performance log file will be:
+assume the performance log file after `curl` finished looks like:
 ```
  time_namelookup:  0.000767s
     time_connect:  0.000875s
@@ -84,7 +88,7 @@ Then check out the traffic data
 ```
 curl  "https://localhost:8050/status/control?cmd=status&group=filter&zone=*"
 ```
-the response body will be look :
+the response body of the 1st request will be like :
 ```json
 {
     "filterZones": {
@@ -147,20 +151,21 @@ According to the configuration example
 - Round-robin algorithm is applied to the upstream block
 - 2 origin servers `127.0.0.1:8010` and `127.0.0.1:8010` in the upstream block `backend_app_345`
 - 2 corresponding filter groups are present, the nginx tried to evenly distributed all the requests to the 2 active origin sevrers.
-  - In total 7 requests, 3 of them passed to `127.0.0.1:8011`, 4 of them passed to `127.0.0.1:8010`
+  - In total 7 requests, 3 of them passed to `127.0.0.1:8011`, 4 of them passed to `127.0.0.1:8010
+- remind that `requestMsecCounter` is an accumulative counter, it keeps total milliseconds spent on processing the requests (each origin server has received)
 
 |filter group|`127.0.0.1:8010::non-stream-file::*`|`127.0.0.1:8011::non-stream-file::*`|
 |------------|----------|-----------|
 |`4xx`| 4| 3|
 |`miss`| 4| 3|
-|`requestMsec`| 268| 94|
-|`requestMsecCounter`| 41| 31|
-
+|`requestMsec`| 41| 31|
+|`requestMsecCounter`| 268| 94|
 
 ## TODO
 - Figure out how to use the directive `vhost_traffic_status_histogram_buckets` and what **histogram** means in official document
 - figure out `filterZones` and `serverZones` in document, the description is unclear 
 - Follow [this issue](https://github.com/vozlt/nginx-module-vts/issues/135), unfinished enchancement of filter-level group control.
+- In `vhost_traffic_status_filter_by_set_key`, the explanation for `key` argument is unclear, figure out how it actually works in low-level detail.
 
 ## Reference
 - [Nginx virtual host traffic status module - Github](https://github.com/vozlt/nginx-module-vts)
