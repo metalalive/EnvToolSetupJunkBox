@@ -1,9 +1,11 @@
+# nginx
 #user  OS_USER_NAME  OS_USER_GROUP;
 worker_processes  1;
 ## logging level can be `debug`, `info`, `error`
 error_log   logs/nginx.error.log info;
 pid         logs/nginx.pid; # to run nginx instance as a daemon
 worker_rlimit_nofile  128;
+worker_rlimit_core    2m;
 
 events {
     worker_connections  5; # must not be greater than worker_rlimit_nofile
@@ -44,7 +46,7 @@ http {
         error_page   404 410              /404.html;
         error_page   500 502 503 504  515 /50x.html;
         ssl_certificate      /PATH/TO/PROXY/SERVER.crt;
-        ssl_certificate_key  /PATH/TO/PROXY/SERVER/secret.key;
+        ssl_certificate_key  /PATH/TO/PROXY/SERVER_secret.key;
         ##ssl_session_ticket_key   /PATH/TO/SESSION-TICKET.key;
         ssl_session_cache  shared:ALIAS_OF_THE_CACHE:3m;
         ssl_protocols   TLSv1.3  TLSv1.2;
@@ -121,3 +123,33 @@ http {
         }
     }
 } ## end of http block
+
+stream {
+    upstream backend_app_567 {
+        server localhost:8010  max_conns=3  max_fails=3 fail_timeout=7s  weight=3;
+        server localhost:8011  max_conns=2  max_fails=3 fail_timeout=8s  weight=5;
+    }
+    server {
+        listen  8051   ssl fastopen=27  backlog=200  reuseport;
+        ssl_certificate      /PATH/TO/PROXY/SERVER2.crt;
+        ssl_certificate_key  /PATH/TO/PROXY/SERVER2_secret.key;
+        ssl_protocols    TLSv1.3  TLSv1.2;
+        
+        proxy_pass  backend_app_567;
+        proxy_buffer_size   8k;
+        proxy_timeout      30s; # between 2 successive reads / writes on single packet
+        proxy_connect_timeout   12s; # for establishing a connection to the chosen origin server
+        proxy_next_upstream     on;
+        proxy_next_upstream_timeout  20s;
+        proxy_next_upstream_tries    1;
+        proxy_download_rate     40k;
+        proxy_upload_rate       11k;
+        
+        proxy_ssl_protocols   TLSv1.3;  # prerequisites, openssl >= v1.1.1
+        proxy_ssl_session_reuse  on; # the default value is also `on`
+        proxy_ssl_certificate      /PATH/TO/UPSTREAM/CERT/ca.crt;
+        proxy_ssl_certificate_key  /PATH/TO/UPSTREAM/CERT/ca.private.key;
+        # added in dev/test env, for self-signed CA (not well-known trusted CA).
+        proxy_ssl_trusted_certificate   /PATH/TO/UPSTREAM/CERT/ca.crt;
+    } # end of server block
+} # end of stream block (transport layer)
