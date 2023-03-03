@@ -74,137 +74,13 @@ sudo make install >& install.log
 ```
 
 ### Configuration
-Here is an example of reverse proxy server, I put all directives into one single file. It also requires extra module [vhost traffic status (nginx-module-vts)](./vhost_traffic_status.md) built with the nginx server.
-
-```nginx
-#user  OS_USER_NAME  OS_USER_GROUP;
-worker_processes  1;
-## logging level can be `debug`, `info`, `error`
-error_log   logs/nginx.error.log info;
-pid         logs/nginx.pid; # to run nginx instance as a daemon
-worker_rlimit_nofile  128;
-
-events {
-    worker_connections  5; # must not be greater than worker_rlimit_nofile
-}
-
-http {
-    include       conf/mime.types;
-    default_type  application/octet-stream;
-    sendfile      on;
-    keepalive_timeout  25;
-    
-    ## basic setup for nginx-module-vts
-    vhost_traffic_status_zone  shared:vts_stats_shr:3m;
-    vhost_traffic_status_histogram_buckets   0.04  0.1  0.3  0.5  1 5 10;
-    vhost_traffic_status_filter  on;
-    vhost_traffic_status_filter_max_node   17   $upstream_addr::non-stream-file::* ;
-    
-    # the path has to be present (created by OS_USER_NAME) before starting the server
-    proxy_cache_path  customdata/nJeeks/cache  levels=2:2  inactive=4m  use_temp_path=off  max_size=10m  keys_zone=zone_one:2m;
-    proxy_cache_lock_timeout  11s;
-    proxy_cache_lock_age      10s;
-    proxy_read_timeout        53s;
-    proxy_send_timeout        47s;
-    
-    limit_conn_zone  $binary_remote_addr  zone=mylmt_conns_state:1m;
-    limit_req_zone   $binary_remote_addr  zone=mylmt_reqs_state:2m rate=3r/s;
-
-    upstream backend_app_345 {
-        # could scale to serveral app servers
-        server localhost:8010  max_conns=31  max_fails=3 fail_timeout=7s  weight=3;
-        server localhost:8011  max_conns=38  max_fails=3 fail_timeout=8s  weight=5;
-        keepalive   10;
-    } # all the servers at here should use the same settings ?
-    
-    server { ## start of proxy server block
-        listen       8050  ssl;
-        server_name  localhost;
-        error_page   404 410              /404.html;
-        error_page   500 502 503 504  515 /50x.html;
-        ssl_certificate      /PATH/TO/PROXY/SERVER.crt;
-        ssl_certificate_key  /PATH/TO/PROXY/SERVER/secret.key;
-        ##ssl_session_ticket_key   /PATH/TO/SESSION-TICKET.key;
-        ssl_session_cache  shared:ALIAS_OF_THE_CACHE:3m;
-        ssl_protocols   TLSv1.3  TLSv1.2;
-        ssl_session_timeout   6m;
-        
-        location ~ \.jpg$ {
-            limit_rate   17k;
-            vhost_traffic_status_filter_by_set_key   pictureJPG   img_jpg::*;
-        }
-        location ~ \.png$ {
-            limit_rate   22k;
-            vhost_traffic_status_filter_by_set_key   picturePNG   img_png::*;
-        }
-        
-        location /status {
-            vhost_traffic_status_display;
-            vhost_traffic_status_display_format html;
-            vhost_traffic_status_bypass_limit    off;
-            vhost_traffic_status_bypass_stats    on;
-            limit_req  zone=mylmt_reqs_state  burst=2;
-            limit_req_status  430;
-            allow  123.4.56.78;
-            allow  127.0.0.1;
-            deny   all;
-        } ## TODO, authorization
-
-        # Debug log file shows Nginx failed to open local file `/html/file`
-        # then immediately return 404 without pass the request to backend app.
-        # Regex location might not be able to work with proxy_pass directive ? (TODO)
-        # location ~ ^/file\?res_id=[A-Za-z0-9%]+$ {
-        location  /file {
-            proxy_pass  https://backend_app_345;
-            proxy_ssl_protocols   TLSv1.3;  # prerequisites, openssl >= v1.1.1
-            proxy_ssl_certificate      /PATH/TO/PROXIED/UPSTREAM/ca.crt;
-            proxy_ssl_certificate_key  /PATH/TO/PROXIED/UPSTREAM/ca.secret.key;
-            # added if it is self-signed CA (not well-known trusted CA).
-            proxy_ssl_trusted_certificate  /PATH/TO/PROXIED/UPSTREAM/ca.crt;
-            ##proxy_ssl_verify  on; ## error on client (proxy server) verify
-            proxy_http_version    1.1;      # http/2 still not supported, figure out why (TODO)
-            add_header  X-Cache-Status  $upstream_cache_status;
-            proxy_cache      zone_one;
-            proxy_cache_key  $request_uri;  # can also use custom header from upstream backend
-            proxy_cache_valid  200  1m;
-            proxy_no_cache   $WHATEVER_VARIABLE;
-            proxy_buffering  on; # it is turned on by default
-            proxy_buffer_size  5k;
-            proxy_buffers    7  9k;
-            limit_conn  mylmt_conns_state  1;
-            limit_conn_status  429;
-            proxy_cache_lock  on;
-            proxy_cache_use_stale   error timeout updating;
-            vhost_traffic_status_filter_by_set_key  $uri  $upstream_addr::non-stream-file::*;
-        } ## end of location block
-    } # end of proxy server block
-
-    # you might have another server group running in different setup
-    upstream django_backend {
-        server localhost:8009; # use web port socket
-    }
-
-    server {
-        listen       8008;
-        server_name  localhost;
-        charset      utf-8;
-        access_log   logs/nginx.access.log;
-        client_max_body_size  16M;
-        allow        127.0.0.1; # allow the requests from these IPs (they cannot be domain name)
-        deny         all; # deny rest of IPs, note the order of the allow/deny declaratives will affect your IP whitelisting
-
-        location / { # forward all the paths to WSGI application (hosted in uwsgi in this case)
-            include     conf/uwsgi_params;
-            uwsgi_pass  django_backend; # specify the name of upstream component
-            ##uwsgi_pass   localhost:8009;
-        }
-    }
-} ## end of http block
-```
+[This](./example.conf.nginx) is an example of reverse proxy server, I put all directives into one single file. It also requires extra module [vhost traffic status (nginx-module-vts)](./vhost_traffic_status.md) built with the nginx server.
 
 #### Note
 - [`$status`](http://nginx.org/en/docs/http/ngx_http_core_module.html#var_status) is a built-in variable which indicates response status code.
 - the endpoint `/status` of the proxy server provides statistic data in HTML format, there is also JSON format generated by another endpoint `/status/format/json`.
+- The directive `listen` with argument `ssl`
+  - xxx (TODO)
 - `ssl_certificate` and `ssl_certificate_key` is acceptable ONLY in server block, in this example the certificate is applied between frontend client and the proxy server.
 - once `ssl_session_ticket_key` is specified with path of pre-shared key file, application will take responsibility to rotate the key, Nginx **won't** do that automatically.
 - `ssl_session_cache` indicate the cache area for session storage, for TLS handshake ooptimization (???????)
@@ -213,14 +89,16 @@ http {
 - `ssl_session_timeout` in TLS 1.3 indicates lifetime of each cached session (note nginx sends [`NewSessionTicket`](https://www.rfc-editor.org/rfc/rfc8446#section-4.6.1) message after handshake is done successfully)
 
 
-### Reverse Proxy in Nginx
-According to the configuration above, there are key factors which build up proxy server:
+### Reverse Proxy in in Nginx
+According to [the configuration](./example.conf.nginx#L14), there are key factors which build up proxy server:
 
 - `proxy_ssl_certificate` and `proxy_ssl_certificate_key` are the cert and key respectively applied between the proxy server and upstream backend app server.
 - In `proxy_pass`, you can also specify upstream label (in this example, it is `backend_app_345`) , which passes the request to one of the sevrers in the [upstream block](https://nginx.org/en/docs/http/ngx_http_upstream_module.html#upstream).
+  - supported in both `http` and `stream` modules.
 - `proxy_read_timeout` and `proxy_send_timeout` indicates timeout seconds (in the example above, `53` and `47`) between 2 successive reads / writes respectively at layer 4 packet (TCP / UDP) [(reference)](https://stackoverflow.com/q/70824741/9853105)
 #### Caching
 - Use case : popular response, not frequently changed / modified
+- supported ONLY in `http` modules; `stream` module does **NOT** support caching
 - `proxy_cache_path`
   - `keys_zone` specifies :
     - the label of the **zone** where cached data is stored. Different server contexts / blocks may share the same **zone** (in this example, it is `zone_one`).
@@ -241,11 +119,13 @@ According to the configuration above, there are key factors which build up proxy
     - otherwise, if directives `no-cache`, `private` are specified in the header, nginx will NOT cache the response body.
 - `proxy_no_cache` makes nginx NOT cache the response if `$WHATEVER_VARIABLE` is either an non-empty string or non-zero number,
 - For `proxy_cache_valid` vs. `inactive` in `proxy_cache_path`, see [this StackOverflow thread](https://stackoverflow.com/questions/64151378/).
+
 #### Buffering
 - Use case: Slow client downloading chunks of response data (synchronously) from the proxy server
 - `proxy_buffering`, turned on by default
 - the size argument in `proxy_buffers` and `proxy_buffer_size` defaults to memory page size of the OS (4KB | 8KB)
 - `proxy_buffer_size` specifies the size only for first chunk of response ; while `proxy_buffers` specifies the size for subsequent chunks
+
 #### Lock
 - `proxy_cache_lock` enables / disables lock on a cache element with the key specified according to `proxy_cache_key`, that ensures:
   - When several reqeusts attempt to populate (create) a new cache element
@@ -320,7 +200,7 @@ According to the configuration above, there are key factors which build up proxy
 - For `limit_conn`, the *connection* in Nginx documentation could mean
   - TCP connection, client with one IP may establish multiple TCP connections
   - HTTP/2 request in a TCP connection, client may start multiple concurrent HTTP/2 requests in a single established TCP connection. (TODO, test this case)
-- In [the example above](#configuration)
+- In [the configuration example](./example.conf.nginx#L97)
   - the server allows each IP to have at most 1 *connection* to the endpoint `/file`, denies others (if there's more) and respond with `429` in order NOT to exceed the limit.
   - To know more about the behavior, you can
     - Start a upstream server in debug mode, add breakpoint somewhere in middle of handling the endpoint. When you establish the first connection (e.g. using tools like `curl`) and it comes to nginx server, it will be temporarily blocked at the upstream server.
@@ -332,7 +212,7 @@ According to the configuration above, there are key factors which build up proxy
   - nginx worker seems to process only one request by default ([source](https://serverfault.com/questions/851750), TODO:verify), and respond with error for all other concurrent requests (even when it doesn't exceed the limit)
   - `burst` means number of excessive inbound requests to queue, so the worker can handle them at a later time
   - The current workaround is to specify `burst` to rate-limit value `r/s` minus 1
-- In [the example above](#configuration)
+- In [the configuration example](./example.conf.nginx#L34)
   - the server allows each IP to have at most 3 *requests* to the endpoint `/status`, denies others (if there's more) and respond with `430` in order NOT to exceed the limit.
   - To meet rate-limiting requirement, `burst` is set to `2` within `limit_req`
   - To know more about the behavior, you can
@@ -348,7 +228,7 @@ According to the configuration above, there are key factors which build up proxy
        traffic: 19.30KB (19765) total, 466B (466) headers (space savings 45.37%), 18.25KB (18692) data
        ```
 #### Limit network bandwidth
-- [The example above](#configuration) specifies a limit `limit_rate` on `17k` bytes to transmit per second when downloading any JPG image.
+- [The configuration](./example.conf.nginx#L55) specifies a limit `limit_rate` on `17k` bytes to transmit per second when downloading any JPG image.
 - Assume you download a picture `/xyz.jpg` using HTTP test tool (e.g. `curl`,`h2load`), you will see the average bandwidth will be approximate `17k` (I use `h2load` at here) :
   ```
   ./h2load --requests=1 --clients=1  --verbose  https://localhost:8050/xyz.jpg
@@ -360,7 +240,7 @@ According to the configuration above, there are key factors which build up proxy
   traffic: 159.93KB (163769) total, 113B (113) headers (space savings 38.25%), 159.52KB (163346) data
   ```
 #### Access Control
-- In [the example above](#configuration), to access the endpoint `/status` :
+- In [the configuration](./example.conf.nginx#L64), to access the endpoint `/status` :
   - the server accepts reqeusts form the 2 IP addresses `123.4.56.78` and `127.0.0.1`, by directive [`allow`](http://nginx.org/en/docs/http/ngx_http_access_module.html#allow)
   - then rejects requests from all other IP addresses by derictive [`deny`](http://nginx.org/en/docs/http/ngx_http_access_module.html#deny)
 
@@ -370,7 +250,7 @@ Note:
 - the term **upstream server** and **origin server** are interchangable in this section
 #### Layer 7 (HTTP)
 - [`upstream`](https://nginx.org/en/docs/http/ngx_http_upstream_module.html#upstream) directive defines a group of origin servers the Nginx server will pass client requests to.
-- In [the example above](#configuration) there are 2 origin servers `localhost:8010` and `localhost:8011` in the block
+- In [the configuration](./example.conf.nginx#L36) there are 2 origin servers `localhost:8010` and `localhost:8011` in the block
 - the default algorithm for load balancing is [round-robin](https://docs.nginx.com/nginx/admin-guide/load-balancer/http-load-balancer/#choosing-a-load-balancing-method), it works with parameter `weight` in [`server`](https://nginx.org/en/docs/http/ngx_http_upstream_module.html#server) block
   - the server `localhost:8010` (say `orig1`) has weight set to `3`
   - `localhost:8011` (say `orig2`) has weight set to `5`
@@ -399,6 +279,8 @@ Note:
     ```
 
 #### Layer 4 (TCP/UDP)
+- [`upstream`](https://nginx.org/en/docs/stream/ngx_stream_upstream_module.html#upstream) directive defines a group of origin servers the Nginx server will pass client requests to.
+  - both of `http` module and `stream` module support `upstream` directive, but the behavior might be different
 (TODO)
 
 ### Traffic monitoring
