@@ -181,10 +181,17 @@ GRANT USAGE ON `DATABASE_NAME`.* TO  'DB_USERNAME'@'IP_OR_DOMAIN_NAME'  WITH max
 
 ##### [Revoke privilege](https://mariadb.com/kb/en/revoke/)
 Revoke certain type(s) of privileges that were granted to specific user.
-```
+```sql
 REVOKE ANY_VALID_PRIVILEGE_OPTIONS  ON `DATABASE_NAME`.`TABLE_NAME`  FROM  'DB_USERNAME'@'IP_OR_DOMAIN_NAME';
 ```
-
+Note:
+- To completely remove specific user from accessing specific database, `ANY_VALID_PRIVILEGE_OPTIONS` has to include different levels of privileges :
+  - [column privilege](https://mariadb.com/kb/en/grant/#column-privileges), such as `INSERT`, `SELECT`
+  - [table privilege](https://mariadb.com/kb/en/grant/#column-privileges), such as `CREATE TABLE`, `ALTER TABLE`, `DROP TABLE`, more importantly, `GRANT OPTION`
+- For example
+  ```sql
+  REVOKE  UPDATE, ALTER, GRANT OPTION  ON `DATABASE_NAME`.`TABLE_NAME`  FROM  'DB_USERNAME'@'IP_OR_DOMAIN_NAME';
+  ```
 
 -------------------------------------------------------------------------------------------
 
