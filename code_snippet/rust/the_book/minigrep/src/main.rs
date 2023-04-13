@@ -2,9 +2,10 @@ use std::{env, process};
 use minigrep::Config;
 
 fn main() {
-    let args:Vec<String> = env::args().collect();
     // args[0] is the path to the executable binary
-    let cfg = Config::build(&args).unwrap_or_else(|e| {
+    // move the ownership of `args` to `build()`
+    let cfg = Config::build(env::args()).unwrap_or_else(
+        |e| {
         println!("problem parsing argument: {e}");
         process::exit(1);
     });
