@@ -3,10 +3,22 @@ use std::fs::File as LocalFile;
 use std::io::{ErrorKind, Error as IOError};
 use std::cmp::PartialOrd; // a trait which implements compare operator e.g. >, <, >=
 use std::fmt::{Display, Formatter, Result as FmtResult};
+use std::ops::{Deref, DerefMut, Drop};
+use std::rc::Rc;
 // use std::marker::Sized;
 
 fn owner_ref_demo() {
-    println!("-------- ownership and reference --------");
+    println!("-------- reference demo --------");
+    let mut x:u8 = 13;
+    let y = & mut x; // mutable reference assgined to `y`
+    // cannot borrow immutable reference here, cuz already borrow mutable reference
+    // assert_eq!(13, x);
+    assert_eq!(13, *y);
+    *y += 5;
+    assert_eq!(18, *y);
+    // the immutable reference `y` is no longer used, it is safe to use `x` again 
+    assert_eq!(18, x);
+    println!("-------- ownership demo --------");
     let s1 = String::from("fire-cracker");
     let s2 = s1 .clone();
     println!("s1:{}, s2:{}, init len:{}", s1, s2, s1.len()); // length is 12
@@ -24,8 +36,11 @@ fn owner_ref_demo() {
     let s3p3 = & s3;
     println!("s3p3:{}", s3p3);
     println!("s1:{}", s1);
-}
+} // end of owner_ref_demo
 
+
+#[derive(Debug)]
+struct Vertex3D(f32,f32,f32);
 
 #[derive(Debug)]
 struct Rectangle {
@@ -47,7 +62,7 @@ impl Rectangle {
         self.width  = w as u16; // (cast i32 to u16, omit upper 16-bit)
         self.height = h as u16;
         // syntax `as` is only for primitive type conversion, not generic type
-    }
+    } // argument `self` is mutable reference, its attributes can be directly modified
 } // end of associated functions of the struct
 
 fn struct_demo() {
@@ -62,6 +77,11 @@ fn struct_demo() {
     r0.scale((-23,-45));
     // Rust will be automatically de-referencing, by adding syntax `*` to the struct instance
     println!("r0 content: {:?}, area:{}", r0, (&r0).area());
+    let mut v3d = Vertex3D(12.3, -4.56, 789.0);
+    assert!(12.35 > v3d.0 && 12.25 < v3d.0);
+    assert!(789.05 > v3d.2 && 788.95 < v3d.2);
+    v3d.2 = 9.75;
+    assert!(9.755 > v3d.2 && 9.745 < v3d.2);
 }
 
 // each variant of a enum type can carry different data / struct
@@ -76,7 +96,7 @@ enum MqttCmdMsg{
 }
 
 fn mq_cmd_scalar(cmd_in:MqttCmdMsg) -> i8 {
-    match cmd_in {
+    match cmd_in { // note the input variable is moved here
         MqttCmdMsg::Publish {content, qos} => {
             let slen = content.len() as i8;
             let q = qos as i8;
@@ -317,9 +337,13 @@ impl Display for Tweet {
     { write!(f, "{}",  self.summarize()) }
 }
 
+
 // return a pointer to instance of any type which implements the ArticleSummary trait
 fn caller_generate_article(switch:bool) -> Box<dyn ArticleSummary>
-{
+{ // this function cares only the return types implementing the trait `ArticleSummary`
+  // , all structs implementing `ArticleSummary` may have various sizes, compiler
+  // will report error due to the size difference. So the instances of the structs
+  // should be wrapped in the instance of smart pointer Box<T>
     if switch {
         Box::new(Tweet {
             username:String::from("nagazawa"),
@@ -348,11 +372,13 @@ fn notify_article<T:ArticleSummary + Display + ? Sized> (item:&T)
 fn trait_demo() {
     println!("-------- trait demo --------");
     // after generating a new instance, the function returns points to dynamic types
-    // which implement the same trait.
-    // The syntax `*` is dereference from the Box instance to original instance.
-    // However, the instance size is unknown, that will cause compile error.
-    // The alternative is to convert them to references.
+    //  which implement the same trait.
+    // Typically the syntax `*` is a dereference from instance of Box smart pointer
+    // to instance of original type.
+    // However, the type size is unknown at compile time, that will cause compile error.
+    // The alternative is to immediately convert them to references.
     let onetweeet = &* caller_generate_article(true);
+    //let onetweeet = & onetweeet;
     let report    = &* caller_generate_article(false);
     notify_article(onetweeet);
     notify_article(report);
@@ -386,6 +412,247 @@ fn  lifetime_variable_demo()
     println!("result: {}", result);
 }
 
+
+fn functional_closure_demo_case_1()
+{ // define closure as normal function, without capturing any value in the scope
+    let mut mylist:Vec<i16> = vec![190,3874,-203];
+    let simple_func = |x:& mut Vec<i16>, num:i16| -> usize {
+        x.push(num);
+        x.len()
+    };
+    assert_eq!(simple_func(& mut mylist, 1349), 4);
+    assert_eq!(simple_func(& mut mylist, -918), 5);
+    let mylist2:Vec<i16> = mylist;
+    let simple_func = |mut x:Vec<i16>| -> Vec<i16> {
+        let elm = x.remove(0); // potential panic might happen
+        x.push(1);
+        x.push(elm);
+        x
+    };
+    let mylist3 = simple_func(mylist2);
+    assert_eq!(mylist3.len(), 6);
+    let mylist4 = simple_func(mylist3);
+    assert_eq!(mylist4.len(), 7);
+    println!("mylist4 : {:?}",mylist4);
+}
+fn functional_closure_demo_case_2()
+{ // try mutable borrow
+    let mut list = vec![1, 2, 3];
+    println!("Before defining closure: {:?}", list);
+    // unlike case 1, this case captures the `list` without defining
+    // input argument in the clusure
+    let mut borrows_mutably = |n| list.push(n);
+    // between the declaration and the final call to the same closure, there must not
+    // be any immutable borrow on the `list`, otherwise it will get compile error
+    borrows_mutably(7); // the first call determines type of input arguments
+    borrows_mutably(54); // subsequent calls have to use the same type in their inputs
+    borrows_mutably(124);
+    println!("After calling closure, immutable borrow on list: {:?}", list);
+}
+fn functional_closure_demo_case_3()
+{ // try FnOnce trait implemented in Option<T>::unwrap_or_else()
+    let mut maybenull:Option<i32> = None;
+    let default_err_val:i32 = -2;
+    let give_default_val = || -> i32 {
+        println!("FnOnce is called, {:?}", maybenull);
+        default_err_val // return
+    }; // automatically capture and borrow `maybenull`, all occur in this closure
+    assert_eq!(maybenull.unwrap_or_else(give_default_val), default_err_val);
+    assert_eq!(maybenull.unwrap_or_else(give_default_val), default_err_val);
+    maybenull = Some(-92018);
+    // cannot use the sane closure `give_default_val` again later after another value
+    // is assigned to variable `maybenull`, it will cause compile error
+    //// assert_eq!(maybenull.unwrap_or_else(give_default_val), -92018);
+    assert_eq!(maybenull.unwrap_or_else(|| default_err_val as i32), -92018);
+}
+fn fnonce_implementor<F>(func:F) -> i8 where F:FnOnce() -> String
+{
+    println!("fnonce_implementor is calling func ptr: {}", func());
+    // after `func` is called, it will be moved (where ?) and `func` is invalid
+    // cannot be called again, otherwise compiler will report error
+    0 
+}
+fn functional_closure_demo_case_4()
+{ // try FnOnce trait with given closure which moves ownership of a value in outer scope
+    let mut x:String = "will be moved" .to_string();
+    let f = move || {
+        x.push_str(" once closure is called");
+        x
+    };
+    assert_eq!(fnonce_implementor(f) , 0); // move ownership of `x` to the function
+    // `x` is invalid and cannot be used again, otherwose compiler will report error
+    // assert_eq!(fnonce_implementor(f) , 0);
+}
+fn functional_closure_demo_case_5()
+{ // try FnMut trait implemented in slice::sort_by_key() 
+    let mut rectangles:[Rectangle;4] = [
+        Rectangle {width:216, height:89},        Rectangle {width:90,  height:818},
+        Rectangle {width:173, height:404},       Rectangle {width:185, height:416},
+    ];
+    let mut num_compares = 0;
+    let f1 = |r:&Rectangle| -> u16 {num_compares += 1;  r.height};
+    // wlll be invoked several times
+    rectangles.sort_by_key(f1);
+    println!("the sorted rectangles by their height: {:?}, #compares:{}",
+             rectangles, num_compares);
+}
+
+fn functional_closure_demo()
+{
+    println!("-------- functional closure demo --------");
+    functional_closure_demo_case_1();
+    functional_closure_demo_case_2();
+    functional_closure_demo_case_3();
+    functional_closure_demo_case_4();
+    functional_closure_demo_case_5();
+} // end of functional_closure_demo
+
+
+fn functional_iterator_demo()
+{
+    println!("-------- functional iterator demo --------");
+    let mut l = vec![91, 23, 567];
+    let mut l2 = l.iter();
+    // the thing we get is an immutable reference to the value
+    assert_eq!(l2.next() , Some(&91));
+    assert_eq!(l2.next() , Some(&23));
+    assert_eq!(l2.next() , Some(&567));
+    assert_eq!(l2.next() , None); // to repeat again (endlessly) , call Iter::cycle()
+    // iterate all entries and apply the closure in map at once
+    let l2:Vec<_> = l.iter().map(|x| x - 1).collect();
+    assert_eq!(l2, vec![90, 22, 566]);
+    // take closure and invoke it with each value in the vec
+    l.remove(0);
+    let mut l2 = l.iter().map(|x| x - 10);
+    assert_eq!(l2.next() , Some(13));
+    assert_eq!(l2.next() , Some(557));
+    assert_eq!(l2.next() , None);
+    // filter out all negative integers
+    let l:Vec<i16> = vec![91, -23, 56, -7, 890, -12, 345, -67];
+    // iterate all entries and apply the closure in filter at once
+    let l2:Vec<&i16> = l.iter().filter(
+        |x:&&i16| -> bool {
+            let z:i16 = 0 as i16;
+            let x2:i16 = **x;
+            z < x2
+        } // TODO, why using two borrows here
+    ).collect();
+    assert_eq!(l2, vec![&91, &56, &890, &345]);
+} // end of  functional_iterator_demo
+
+
+#[derive(Debug)]
+enum ExListNode {
+    Cons(u32, Box<ExListNode>),
+    Nil
+} // Box smart pointer is applied when the size of type is
+  // unknown at compile time.
+  // If the value is not reference, Box smart pointer MUST be
+  // the ONLY owner of the value.
+  // so Box might not be good option for vertices in graph data structure
+fn smart_ptr_box_demo()
+{
+    use ExListNode::{Cons, Nil};
+    println!("-------- smart-pointer box demo --------");
+    let final_node = Cons(4, Box::new(Nil));
+    let head_node:ExListNode = Cons(98, Box::new(Cons(765, Box::new(final_node))));
+    let cl_p = &head_node; // cl_p references to the value in `head_node`
+    println!("cl_p: {:?}", *cl_p);
+    // you can also specify reference in match statement, so Rust compare
+    // the value referenced by `cl_p` with moveing the variable `head_node`
+    match  cl_p {
+       ExListNode::Cons(val, nxt_p) => {
+           println!("--- val:{}, next pointer:{:?}", val, nxt_p);
+       },
+        _other => {println!("end of cons list");}
+    };
+    println!("cl_p: {:?}", *cl_p); // dereference and print entire list
+    println!("head_node: {:?}", head_node);
+}
+
+// define custom smart pointer
+// the parameter `T` is generic, so MyBox is a tuple with only one
+// element of a generic type
+struct MyBox<T> (T, String);
+
+impl<T> MyBox<T> {
+    fn new(v:T, key:&str) -> MyBox<T> {
+        MyBox(v, key.to_string())
+    }
+}
+impl<T> Deref for MyBox<T> {
+    type Target = T; // TODO, is it type alias ?
+    fn deref(&self) -> & Self::Target {&self.0}
+    // tell callers which instance / value to reference
+}
+impl<T> DerefMut for MyBox<T> {
+    fn deref_mut(& mut self) -> & mut Self::Target {
+        &mut self.0
+    } // TODO, no need to declare Target ?
+}
+impl<T>  Drop for MyBox<T> {
+    fn drop(& mut self) {
+        println!("MyBox pointer is destroying {}", self.1);
+    }
+}
+
+fn  deref_coercion_test(s:&str) {
+    println!("Hello, {s}!");
+}
+
+fn  deref_trait_demo()
+{
+    println!("-------- deref/drop trait demo --------");
+    let x:u8 = 13;
+    let mut y = Box::new(x); // copy value in `x` to `y`
+    let mut z:MyBox<u8> = MyBox::new(x, &"cpy-cat");
+    assert_eq!(13, x);
+    assert_eq!(13, *y);
+    assert_eq!(13, *z);
+    *y += 5;
+    *z  = *z * 6;
+    assert_eq!(78, *z);
+    *z -= 1;
+    assert_eq!(13, x);
+    assert_eq!(18, *y);
+    assert_eq!(77, *z);
+    let sp = MyBox::new(String::from("kangroo"), &"jump");
+    // since standard library implements Deref trait on String type
+    // , the reference to MyBox<String> type will be converted to the
+    // reference to String type, then convert it to reference to string
+    // literal
+    deref_coercion_test(&sp);
+} // end of deref_trait_demo
+
+
+#[derive(Debug)]
+enum ShrListNode {
+    Cons(u32, Rc<ExListNode>),
+    // Nil
+} // Box smart pointer is applied when the size of type is
+
+fn smart_ptr_refcnt_demo()
+{
+    println!("-------- smart-pointer ref-cnt demo --------");
+    // single ownership
+    let shared_final  = ExListNode::Cons(72, Box::new(ExListNode::Nil));
+    let shared_middle = ExListNode::Cons(30, Box::new(shared_final));
+    let _shared_head = ExListNode::Cons(1884, Box::new(shared_middle));
+    let shared_head  = Rc::new(_shared_head);
+    // shared ownership of `shared_head` among several nodes
+    let node_b = ShrListNode::Cons(510, Rc::clone(&shared_head));
+    let node_c = ShrListNode::Cons(742, Rc::clone(&shared_head));
+    assert_eq!(Rc::strong_count(&shared_head), 3);
+    {
+        let _node_d = ShrListNode::Cons(18364, Rc::clone(&shared_head));
+        assert_eq!(Rc::strong_count(&shared_head), 4);
+    }
+    assert_eq!(Rc::strong_count(&shared_head), 3);
+    println!("node_b: {:?}", node_b);
+    println!("node_c: {:?}", node_c);
+} // end of  smart_ptr_refcnt_demo
+
+
 fn main() {
     owner_ref_demo();
     struct_demo();
@@ -397,5 +664,10 @@ fn main() {
     generic_func_demo();
     trait_demo();
     lifetime_variable_demo();
+    functional_closure_demo();
+    functional_iterator_demo();
+    smart_ptr_box_demo();
+    deref_trait_demo();
+    smart_ptr_refcnt_demo();
 } // end of main
 
