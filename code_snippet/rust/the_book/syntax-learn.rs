@@ -4,7 +4,8 @@ use std::io::{ErrorKind, Error as IOError};
 use std::cmp::PartialOrd; // a trait which implements compare operator e.g. >, <, >=
 use std::fmt::{Display, Formatter, Result as FmtResult};
 use std::ops::{Deref, DerefMut, Drop};
-use std::rc::Rc;
+use std::rc::{Rc, Weak};
+use std::cell::{RefCell, RefMut, Ref};
 // use std::marker::Sized;
 
 fn owner_ref_demo() {
@@ -541,15 +542,18 @@ fn functional_iterator_demo()
 } // end of  functional_iterator_demo
 
 
+// Box smart pointer is applied when the size of type is
+// unknown at compile time.
+// If the value is not reference, Box smart pointer MUST be
+// the ONLY owner of the value.
+// so Box might not be good option for vertices in graph dat
+// a structure ? since there might be several inbound / outbound
+// links for a vertex
 #[derive(Debug)]
 enum ExListNode {
     Cons(u32, Box<ExListNode>),
     Nil
-} // Box smart pointer is applied when the size of type is
-  // unknown at compile time.
-  // If the value is not reference, Box smart pointer MUST be
-  // the ONLY owner of the value.
-  // so Box might not be good option for vertices in graph data structure
+}
 fn smart_ptr_box_demo()
 {
     use ExListNode::{Cons, Nil};
@@ -632,7 +636,7 @@ enum ShrListNode {
 } // Box smart pointer is applied when the size of type is
 
 fn smart_ptr_refcnt_demo()
-{
+{ // note references to the rc pointer have to be immutable
     println!("-------- smart-pointer ref-cnt demo --------");
     // single ownership
     let shared_final  = ExListNode::Cons(72, Box::new(ExListNode::Nil));
@@ -653,6 +657,220 @@ fn smart_ptr_refcnt_demo()
 } // end of  smart_ptr_refcnt_demo
 
 
+trait AbsMessager {
+    fn send(&self, body:&str);
+}
+// Trait bound syntax (ch10-3, The Book) can also be applied
+// to struct declaration. Here the generic type `T` is constrained
+// by the types implementing only `AbsMessager` trait
+struct LimitTracker<'a , T:AbsMessager>
+{
+    // the field below holds reference to an instance of generic
+    // type `T`, lifetime should be annotated
+    sender:& 'a T,
+    value:usize,
+    max:usize,
+}
+impl<'a,T> LimitTracker<'a,T>  where T: AbsMessager,
+{ // `Self` is the alias covering the whole syntax
+  // --> LimitTracker<'a,T:AbsMessager>
+    fn new(s:&'a T, _max:usize) -> Self {
+        Self {sender:s, max:_max, value:0}
+    }
+    fn set(&mut self, v:usize) {
+        self.value = v;
+        let percentage_of_max = self.value as f64 / self.max as f64;
+        if percentage_of_max >= 1.0 {
+            self.sender.send("quota use up");
+        } else if percentage_of_max >= 0.9 {
+            self.sender.send("warning, use over 90% of your quota");
+        } else if percentage_of_max >= 0.75 {
+            self.sender.send("use over 75%, consider to increase capacity");
+        }
+    }
+}
+
+struct MockMessager {
+    sent_msgs:RefCell<Vec<String>>,
+}
+impl MockMessager {
+    fn new() -> Self
+    { Self{sent_msgs: RefCell::new(vec![])} }
+}
+impl AbsMessager for MockMessager {
+    // the self variable shouldn't be mutable, to match definition in `AbsMessager` trait
+    fn send(&self, body:&str) {
+        // has to be mutable only for testing purpose
+        self.sent_msgs.borrow_mut().push(body.to_string());
+    }
+}
+
+fn smart_ptr_refcell_demo()
+{
+    println!("-------- smart-pointer ref-cell demo --------");
+    let appmax:usize = 101;
+    // the mock messager instance on caller side is immutable
+    let mockmsger = MockMessager::new();
+    let mut tracker = LimitTracker::new(&mockmsger, appmax);
+    // without `RefCell` instance, compiler will report error cuz the following call
+    // to `set()` function will make the tracker add new content to the mock messager.
+    tracker.set(78);
+    assert_eq!(mockmsger.sent_msgs.borrow().len(), 1);
+    tracker.set(95);
+    assert_eq!(mockmsger.sent_msgs.borrow().len(), 2);
+    // RefCell, borrowing rules at runtime time:
+    // - either mutable or immutable borrow can occur at the same time
+    // - can be mutably borrowed only once
+    // - can be immutably borrowed more than once
+    {
+        let mut b1:RefMut<Vec<String>> = mockmsger.sent_msgs.borrow_mut();
+        assert_eq!(mockmsger.sent_msgs.try_borrow_mut().is_err(), true);
+        assert_eq!(mockmsger.sent_msgs.try_borrow().is_err(), true);
+        assert_eq!(mockmsger.sent_msgs.try_borrow().is_err(), true);
+        let last_sent_content = b1.pop().unwrap();
+        assert_eq!(last_sent_content, "warning, use over 90% of your quota");
+        assert_eq!(b1.len(), 1);
+    } // b1 goes out of scope, return the borrow
+    {
+        let b2:Ref<Vec<String>> = mockmsger.sent_msgs.borrow();
+        let b3:Ref<Vec<String>> = mockmsger.sent_msgs.borrow();
+        assert_eq!(mockmsger.sent_msgs.try_borrow_mut().is_err(), true);
+        assert_eq!(b3.len(), 1);
+        assert_eq!(b2[0], "use over 75%, consider to increase capacity");
+        assert_eq!(b2.len(), 1);
+    }
+} // end of smart_ptr_refcell_demo
+
+
+
+enum ListnodeLinkType {
+    // ref-cell wraps Option and Rc/Weak type, in this case it can be borrowed
+    // mutably for setting Rc instance after node declaration
+    StrongLink( RefCell<Option<Rc<MLeakLLnode>>> ),
+    WeakLink( RefCell<Option<Weak<MLeakLLnode>>> ),
+}
+
+struct MLeakLLnode {
+    _value: u16,
+    next: ListnodeLinkType,  // RefCell<Option<Rc<MLeakLLnode>>>,
+}
+
+// CAUTION, generic type MUST NOT be used to define another generic type
+// in the return type, the following function will cause compile error
+//  with the message like `return type mismatch`
+// fn _get_llnode_link_type<T> (x:&ListnodeLinkType)
+//     -> &RefCell<Option<T>> {
+//     match x {
+//         ListnodeLinkType::StrongLink(l) => l,
+//         ListnodeLinkType::WeakLink(l) => l ,
+//     }
+// }
+
+fn refcycle_memleak_demo()
+{ // create linked list first
+    println!("-------- reference-cycle memory-leak demo --------");
+    // `b` itself does not need to be mutable
+    let  b = Rc::new(MLeakLLnode{ _value:187, next:
+        ListnodeLinkType::StrongLink(RefCell::new(None))
+    });
+    let  a = Rc::new(MLeakLLnode{ _value:254, next:
+        ListnodeLinkType::StrongLink( RefCell::new(Some(Rc::clone(&b))) )
+    });
+    assert_eq!(Rc::strong_count(&b), 2);
+    assert_eq!(Rc::strong_count(&a), 1);
+    // strong reference are how you share ownership of a RC<T>
+    match &b.next { // feed reference to avoid ownership movement below
+        ListnodeLinkType::StrongLink(b_link) => {
+            println!("link last node b to first node a");
+            // setting new Rc instance below requires DerefMut trait, RefCell implements it
+            // while Rc doesn't, without RefCell, compiler will report error
+            *b_link.borrow_mut() = Some(Rc::clone(&a));
+        },
+        _others => {},
+    }
+    assert_eq!(Rc::strong_count(&b), 2);
+    assert_eq!(Rc::strong_count(&a), 2);
+    // can also access the field directly through `a` ?
+    let a_ptr = Rc::as_ref(&a);
+    println!("node a found");
+    assert_eq!(a_ptr._value, a._value);
+    assert_eq!(a_ptr._value, 254);
+    match &a_ptr.next {
+        ListnodeLinkType::StrongLink(a_link) => {
+            if let Some(b_ptr) = & * a_link.borrow()
+            { // dereference immediately followed by reference, to avoid ownership movement
+                println!("node b found");
+                assert_eq!(b_ptr._value, b._value);
+                match &b_ptr.next {
+                    ListnodeLinkType::StrongLink(b_link) => {
+                         if let Some(a_dup_ptr) = &*b_link.borrow() {
+                             println!("node a found AGAIN ... loop detected");
+                             assert_eq!(a_dup_ptr._value, a._value);
+                         }
+                    },
+                    _others => {},
+                }
+            }
+        },
+        _others => {},
+    };
+    // add extra semicolon at the end, to extend life of `a` and `b`
+} // end of  refcycle_memleak_demo
+
+
+fn  refcycle_avoid_leak_demo()
+{
+    println!("-------- reference-cycle avoid memory-leak demo --------");
+    let  b = Rc::new(MLeakLLnode{ _value:187, next:
+        ListnodeLinkType::WeakLink(RefCell::new(None))
+    });
+    { // inner scope start
+        // weak references don't express an ownership relationship,
+        // their counts don't affect when cleaning up Rc<T> instance
+        let  a = Rc::new(MLeakLLnode{ _value:254, next:
+            ListnodeLinkType::StrongLink( RefCell::new(Some(Rc::clone(&b))) )
+        });
+        assert_eq!(Rc::strong_count(&b), 2);
+        assert_eq!(Rc::strong_count(&a), 1);
+        assert_eq!(Rc::weak_count(&a), 0);
+        match &b.next { // feed reference to avoid ownership movement below
+            ListnodeLinkType::WeakLink(b_link) => {
+                println!("link last node b to first node a");
+                // setting new Rc instance below requires DerefMut trait, RefCell implements it
+                // while Rc doesn't, without RefCell, compiler will report error
+                *b_link.borrow_mut() = Some(Rc::downgrade(&a));
+            },
+            _others => {},
+        }
+        assert_eq!(Rc::strong_count(&b), 2);
+        assert_eq!(Rc::strong_count(&a), 1);
+        assert_eq!(Rc::weak_count(&a), 1);
+        match &b.next {
+            ListnodeLinkType::WeakLink(b_link) => {
+                if let Some(a_dup) = &*b_link.borrow()
+                { // to make sure MLeakLLnode instance still exists, call Weak<T>::upgrade()
+                    println!("node `a` linked after `b` ... loop detected, {:?}", a_dup);
+                    let a_dup = a_dup.upgrade().unwrap();
+                    assert_eq!(a_dup._value, a._value);
+                }
+            },
+            _others => {},
+        };
+    } // inner scope end
+    assert_eq!(Rc::strong_count(&b), 1);
+    match &b.next {
+        ListnodeLinkType::WeakLink(b_link) => {
+            if let Some(a_ptr) = &*b_link.borrow()
+            {
+                println!("node `a` went out of scope and shouldn be dropped");
+                assert_eq!(a_ptr.upgrade().is_none(), true);
+            }
+        },
+        _others => {},
+    };
+} // end of  refcycle_avoid_leak_demo
+
+
 fn main() {
     owner_ref_demo();
     struct_demo();
@@ -669,5 +887,9 @@ fn main() {
     smart_ptr_box_demo();
     deref_trait_demo();
     smart_ptr_refcnt_demo();
+    smart_ptr_refcell_demo();
+    // the demo below causes memory leak, run with Valgrind to see the report
+    refcycle_memleak_demo();
+    // the demo below shows how to create cycle without memory leak
+    refcycle_avoid_leak_demo();
 } // end of main
-
