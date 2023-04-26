@@ -5,7 +5,8 @@ use std::cmp::PartialOrd; // a trait which implements compare operator e.g. >, <
 use std::fmt::{Display, Formatter, Result as FmtResult};
 use std::ops::{Deref, DerefMut, Drop};
 use std::rc::{Rc, Weak};
-use std::cell::{RefCell, RefMut, Ref};
+use std::cell::{RefCell, RefMut, Ref, Cell};
+use std::slice;
 // use std::marker::Sized;
 
 fn owner_ref_demo() {
@@ -98,9 +99,9 @@ enum MqttCmdMsg{
 
 fn mq_cmd_scalar(cmd_in:MqttCmdMsg) -> i8 {
     match cmd_in { // note the input variable is moved here
-        MqttCmdMsg::Publish {content, qos} => {
-            let slen = content.len() as i8;
-            let q = qos as i8;
+        MqttCmdMsg::Publish {content:mcontent, qos:mqos} => {
+            let slen = mcontent.len() as i8;
+            let q = mqos as i8;
             slen + q
         },
         MqttCmdMsg::Consume(maybe_s) =>
@@ -361,8 +362,10 @@ fn caller_generate_article(switch:bool) -> Box<dyn ArticleSummary>
     }
 } // end of  caller_generate_article
 
-// `?Sized` is used fo ignoring the bound to `Sized` trait, to allow the size
-// of the arguement `item`  to be unknown.
+// - the function uses trait bound on generic type, compiler will generate
+//   non-generic implementation for each concrete type, this is called `static dispatch`
+// - `?Sized` is used fo ignoring the bound to `Sized` trait, to allow the size
+//    of the arguement `item`  to be unknown.
 fn notify_article<T:ArticleSummary + Display + ? Sized> (item:&T)
 { // the function cannot know size of the input type implementing the traits
   // at compile time, however that should be ok in this case cuz the input
@@ -374,15 +377,15 @@ fn trait_demo() {
     println!("-------- trait demo --------");
     // after generating a new instance, the function returns points to dynamic types
     //  which implement the same trait.
+    let onetweeet = caller_generate_article(true);
+    //let onetweeet = & onetweeet;
+    let report    = caller_generate_article(false);
     // Typically the syntax `*` is a dereference from instance of Box smart pointer
     // to instance of original type.
     // However, the type size is unknown at compile time, that will cause compile error.
     // The alternative is to immediately convert them to references.
-    let onetweeet = &* caller_generate_article(true);
-    //let onetweeet = & onetweeet;
-    let report    = &* caller_generate_article(false);
-    notify_article(onetweeet);
-    notify_article(report);
+    notify_article(& * onetweeet);
+    notify_article(& * report);
 }
 
 // Rust's borrow checker at compile time cannot determine :
@@ -870,6 +873,103 @@ fn  refcycle_avoid_leak_demo()
     };
 } // end of  refcycle_avoid_leak_demo
 
+fn destructing_breakapart_demo()
+{
+    println!("-------- destructing to break-apart value demo --------");
+    let p = Rectangle {width: 186, height:535};
+    let Rectangle {width: d0, height: d1} = p;
+    assert_eq!(d0, 186);
+    assert_eq!(d1, 535);
+}
+
+fn  deref_raw_ptr_demo()
+{
+    println!("-------- dereference raw pointer demo --------");
+    // avoid dereferencing a invalid pointer as much as possible
+    // cuz Rust standard library does not provide any mechanism
+    // for exception handling at OS level. (which implicitly means
+    // you may still need to handle that in C code)
+    // ----------------------------
+    // let addr = 0xe234abc0u32;
+    // let ptr:* const i8 = addr as * const i8;
+    // *ptr // <-- segmentation fault at OS, terminated abormally
+    // ----------------------------
+    let mut value:u8 = 0xe2;
+    let p1:*const u8 = & value as * const u8;
+    let p2:*mut u8   = & mut value as * mut u8;
+    unsafe {
+        assert_eq!(*p1, 0xe2u8);
+        *p2 -= 3;
+        assert_eq!(*p1, 0xdfu8);
+        *p2 -= 10;
+        assert_eq!(*p1, 0xd5u8);
+    } // compiler omitted the borrowing rules so mutable and immutable
+      // references can co-exist in the same scope.
+} // end of deref_raw_ptr_demo
+
+fn my_split_at_mut(values:&mut[i16], mid:usize) -> (&mut[i16], &mut[i16])
+{ 
+    // raw pointer declared with primitive type, not vector, also no need
+    // to add `mut` after `let` 
+    let ptr : * mut i16 = values.as_mut_ptr();
+    let totlen = values.len();
+    assert!(totlen > mid);
+    unsafe {
+        // compiler will report error to the code below, even when it is
+        // already in unsafe block ...
+        // (&mut values[..mid], &mut values[mid..])
+        ( 
+            slice::from_raw_parts_mut(ptr, mid),
+            slice::from_raw_parts_mut(ptr.add(mid), totlen - mid),
+        )
+    }
+} // end of my_split_at_mut
+
+fn unsafe_block_demo()
+{
+    println!("-------- unsafe block demo --------");
+    let mut values:Vec<i16> = vec![-92, 30, 551, -47, 918, -55];
+    let mid = 3;
+    let (d0,d1) = my_split_at_mut(&mut values, mid);
+    d0[0] += 3;
+    d1[1] -= 10;
+    assert_eq!(d0, [-89, 30, 551]);
+    assert_eq!(d1, [-47, 908, -55]);
+    println!("original values: {:?}", values);
+}
+
+use std::sync::Mutex;
+// static lifetime
+static mut GLOBAL_COUNTER : i32 = 15;
+static GLOBAL_COUNTER_2: Mutex<Cell<Rectangle>> = 
+    Mutex::new(Cell::new(
+        Rectangle{width:100u16, height:125u16}
+    ));
+
+// app developers are responsible to ensure that gloval variables
+// are accessed in thread-safe situations, such as put them in
+// `unsafe` block or use it within `Mutex`, otherwise compiler
+// will report error.
+fn  global_var_demo()
+{
+    println!("-------- global variable demo --------");
+    unsafe {
+        GLOBAL_COUNTER += 4;
+        let newval = GLOBAL_COUNTER;
+        assert_eq!(newval, 19i32);
+    }
+    if let Ok(mut currcell) = GLOBAL_COUNTER_2.lock() {
+        let mut value = currcell.get_mut();
+        value.width += 7;
+        value.height = value.height >> 1;
+    }
+    if let Ok(mut currcell) = GLOBAL_COUNTER_2.lock() {
+        // request the reference without moving the ownership
+        let value = currcell.get_mut();
+        assert_eq!(value.width, 107u16);
+        println!("new value in GLOBAL_COUNTER_2: {:?}", value);
+    }
+}
 
 fn main() {
     owner_ref_demo();
@@ -892,4 +992,8 @@ fn main() {
     refcycle_memleak_demo();
     // the demo below shows how to create cycle without memory leak
     refcycle_avoid_leak_demo();
+    destructing_breakapart_demo();
+    deref_raw_ptr_demo();
+    unsafe_block_demo();
+    global_var_demo();
 } // end of main
