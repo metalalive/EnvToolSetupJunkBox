@@ -1,0 +1,8 @@
+[package]
+name = "halo_macro"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+halo_macro_derive = {path = "./halo_macro_derive"}
+
