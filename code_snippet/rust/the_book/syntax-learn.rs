@@ -3,7 +3,7 @@ use std::fs::File as LocalFile;
 use std::io::{ErrorKind, Error as IOError};
 use std::cmp::PartialOrd; // a trait which implements compare operator e.g. >, <, >=
 use std::fmt::{Display, Formatter, Result as FmtResult};
-use std::ops::{Deref, DerefMut, Drop};
+use std::ops::{Deref, DerefMut, Drop, Add};
 use std::rc::{Rc, Weak};
 use std::cell::{RefCell, RefMut, Ref, Cell};
 use std::slice;
@@ -197,6 +197,9 @@ fn string_demo() {
     println!("s2: {}, s3: {}", s2, s3);
     s3.push(' ');
     s3.push_str("HereAndThere");
+    // slice structure actually stores only starting position and
+    // length of the slice. It is also considered as one of usages
+    // in Dynamically Sized Type
     println!("s3: {}, slice[4..10]: {}, slice[25..]: {}",
              s3, &s3[4..10], &s3[25..]);
 } // string indexing is prohibited, but range selection is allowed.
@@ -302,7 +305,6 @@ struct DailyNews {
     author:String,
     content:String,
 }
-
 impl ArticleSummary for DailyNews {
     fn summarize(&self) -> String {
         format!("{}, by {} - {}", self.headline,
@@ -321,7 +323,6 @@ struct Tweet {
     num_replies:u16,
     summary_limit:u16,
 }
-
 impl ArticleSummary for Tweet {
     fn summarize(&self) -> String {
         let fullcontent = self.content.as_str();
@@ -364,8 +365,8 @@ fn caller_generate_article(switch:bool) -> Box<dyn ArticleSummary>
 
 // - the function uses trait bound on generic type, compiler will generate
 //   non-generic implementation for each concrete type, this is called `static dispatch`
-// - `?Sized` is used fo ignoring the bound to `Sized` trait, to allow the size
-//    of the arguement `item`  to be unknown.
+// - `?Sized` is used for relaxing the restriction and ignoring the bound to `Sized`
+//    trait, allow the size of given arguement `item`  to be unknown.
 fn notify_article<T:ArticleSummary + Display + ? Sized> (item:&T)
 { // the function cannot know size of the input type implementing the traits
   // at compile time, however that should be ok in this case cuz the input
@@ -386,6 +387,8 @@ fn trait_demo() {
     // The alternative is to immediately convert them to references.
     notify_article(& * onetweeet);
     notify_article(& * report);
+    // Note the golden rule of dynamically sized type is to put value of the
+    // unknown-sized type behind the pointer `&`
 }
 
 // Rust's borrow checker at compile time cannot determine :
@@ -971,6 +974,94 @@ fn  global_var_demo()
     }
 }
 
+
+struct Vertex2D{x:i32, y:i32}
+
+// Vertex3D declared above
+// set default value to generic type parameter in Add<T>
+impl Add<Vertex2D> for Vertex3D {
+    type Output = Vertex3D;
+    fn add(self, n:Vertex2D) -> Self::Output {
+        Vertex3D(
+            self.0 + (n.x as f32),
+            self.1 + (n.y as f32),
+            self.2 - 0.1,
+        )
+    }
+}
+fn overload_operator_demo()
+{
+    println!("-------- overload operator demo --------");
+    let p0 = Vertex3D(2.3, 4.5, 6.7) ;
+    let p1 = Vertex2D{x:365,y:-22};
+    let p2:Vertex3D = p0 + p1;
+    println!("p2 is {:?}", p2);
+}
+
+trait WolfSpider {fn hunt(&self);}
+trait TigerShark {fn hunt(&self);}
+struct Hunter;
+impl WolfSpider for Hunter {
+    fn hunt(&self) {
+        println!("the web trapping insects then poison them");
+    }
+}
+impl TigerShark for Hunter {
+    fn hunt(&self) {
+        println!("swim fast toward the target then bite");
+    }
+}
+impl Hunter {
+    fn hunt(&self) {
+        println!("capture then kill the target");
+    }
+}
+
+fn call_method_disambiguation_demo()
+{
+    println!("-------- call-method disambiguation demo --------");
+    let h = Hunter{};
+    h.hunt();
+    WolfSpider::hunt(&h);
+    TigerShark::hunt(&h);
+}
+
+fn declarative_macro_demo()
+{ // define a local macro
+    macro_rules! my_ez_vec {
+        // the order of the arms determines which code block
+        // will be generated first
+        ( $y:ident ) => { // `ident` is the variable declared previously
+            {
+                let mut out = Vec::new();
+                $y(&mut out);
+                out
+            }
+        };
+        ( $($x:literal),* ) => { // `literal` has to be integer or string or byte
+            { // this arm creates inner scope of code block which
+              // returns vector instance at the end
+                let mut out = Vec::new();
+                $( out.push($x); )*
+                out
+            }
+        }; // the bracket here is referred to by macro declaration
+    }
+    println!("-------- declarative macro demo --------");
+    let lst1 =  my_ez_vec![56, -439, 17];
+    let lst2 =  my_ez_vec![5.6, -4.39, 1.7];
+    let c = |outp:&mut Vec<String>| {
+        outp.push("chatGPT".to_string());
+        outp.push("MsBing".to_string());
+    };
+    let lst3:Vec<String> = my_ez_vec!(c);
+    assert_eq!(lst1, [56, -439, 17]);
+    assert_eq!(lst2, [5.6, -4.39, 1.7]);
+    assert_eq!(lst3, ["chatGPT","MsBing"]);
+    println!("lst3 : {:?}", lst3);
+} // end of declarative_macro_demo
+
+
 fn main() {
     owner_ref_demo();
     struct_demo();
@@ -996,4 +1087,7 @@ fn main() {
     deref_raw_ptr_demo();
     unsafe_block_demo();
     global_var_demo();
+    overload_operator_demo();
+    call_method_disambiguation_demo();
+    declarative_macro_demo();
 } // end of main
