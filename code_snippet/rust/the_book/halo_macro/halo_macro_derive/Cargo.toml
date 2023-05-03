@@ -1,0 +1,22 @@
+[package]
+name = "halo_macro_derive"
+version = "0.1.0"
+edition = "2021"
+
+# this is a procedure-macro crate, should be tightly coupled
+# with another binary or library crate which applies the macro
+# defined at here.
+[lib]
+proc-macro = true
+# this enable a built-in crate `proc_macro` in Rust standard library
+
+[dependencies]
+# 3rd-party crates for parsing extra code in macro
+syn = {version="2.0", features=["extra-traits"]}
+# 1. The `syn` crate parses Rust code from a string to data structure for
+#    another crate `quote` to process
+# 2. This project reqires `extra-traits` feature for debugging and printing
+#    internal structure of some instances
+# 3. then `quote` provides function which turns the data structure back
+#    to Rust code string.
+quote = "1.0"
