@@ -8,7 +8,7 @@ use async_trait::async_trait;
 use tokio::sync::broadcast;
 use tokio_stream::{Stream as TokioAbstractStream, StreamExt, StreamMap};
 
-use crate::{Connection, AsyncResult, Parse, ParseError, Frame};
+use crate::{Connection, AsyncResult, Parse, ParseError, Frame, SingleRequestShutdown};
 use crate::cmd::{Command as PubCommand, private_part::Command as PrivCommand};
 use crate::db::FakeDatabase;
 
@@ -54,11 +54,11 @@ impl CommonInit for Unsubscribe {
 //   any given time.
 #[async_trait]
 impl PubCommand for Subscribe {
-    async fn apply(&self, db:&FakeDatabase, dst:&mut Connection) -> AsyncResult<()>
-    {
-        // gather streams for all channels, has to be declared as mutable instance
+    async fn apply(&self, db:&FakeDatabase, dst:&mut Connection,
+                   shutdown:&mut SingleRequestShutdown) -> AsyncResult<()>
+    { // gather streams for all channels, has to be declared as mutable instance
         let mut subscriptions:StreamMap<String, MessagesPipe> = StreamMap::new();
-        loop {
+        while !shutdown.is_shutdown()  {
             let _chns:Vec<String> = {
                 // the inner scope ensures the mutable reference from `RefMut<T>` type
                 // will be dropped earlier before calling the async functions
@@ -74,21 +74,23 @@ impl PubCommand for Subscribe {
                 let frm = self.make_subscribe_response(chn, num_subs);
                 dst.write_frame(&frm).await ?;
             } // move the new channel labels to given stream map
-            tokio::select! { // wait on multiple concurrent branches
-                // No need to use `await` on each async expression.
+            tokio::select! {
                 // Note the method `next()` comes from the trait `StreamExt`
                 Some((k, v)) = subscriptions.next() => {
                     let frm = self.make_message_response(k,v);
                     dst.write_frame(&frm).await?;
                 }
                 result = dst.read_frame() => {
-                    let result = match result {Ok(r) => r, _others => break};
-                    let frm = match result {Some(f) => f, None => break};
+                    let result = match result {Ok(r) => r, _others => break}; // network error
+                    let frm = match result {Some(f) => f, None => break}; // end of stream
                     let result = self.handle_cmd_in_stream(frm, &mut subscriptions)?;
                     if let Some(frm) = result {
                         dst.write_frame(&frm).await?;
                     }
                 } // more frames from client
+                _ = shutdown.recv() => {
+                    println!("receive shutdown when streaming to subcribers");
+                } // will break the loop
             }; // end of macro tokio::select
         } // end of loop
         Ok(())

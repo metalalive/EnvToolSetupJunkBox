@@ -1,4 +1,4 @@
-use crate::{Connection, AsyncResult, Frame, Parse};
+use crate::{Connection, AsyncResult, Frame, Parse, SingleRequestShutdown};
 use crate::db::FakeDatabase;
 use crate::cmd::{Command as PubCommand, private_part::Command as PrivCommand};
 
@@ -28,8 +28,8 @@ impl PrivCommand for Unknown {
     
 #[async_trait]
 impl PubCommand for Unknown {
-    async fn apply(&self, _fdb: &FakeDatabase, dst: &mut Connection)
-        -> AsyncResult<()>
+    async fn apply(&self, _fdb: &FakeDatabase, dst: &mut Connection,
+                   _ :&mut SingleRequestShutdown) -> AsyncResult<()>
     {
         let detail = format!("frame not supported, type:{}", self.name);
         let response = Frame::Error(detail);

@@ -2,7 +2,7 @@ use std::time::Duration;
 use bytes::Bytes;
 use async_trait::async_trait;
 
-use crate::{Connection, AsyncResult, Parse, ParseError, Frame};
+use crate::{Connection, AsyncResult, Parse, ParseError, Frame, SingleRequestShutdown};
 use crate::cmd::{Command as PubCommand, private_part::Command as PrivCommand};
 use crate::db::FakeDatabase;
 
@@ -23,8 +23,8 @@ impl Set {
 
 #[async_trait]
 impl PubCommand for Set {
-    async fn apply(&self, fdb: &FakeDatabase, dst: &mut Connection)
-        -> AsyncResult<()>
+    async fn apply(&self, fdb: &FakeDatabase, dst: &mut Connection,
+                   _ :&mut SingleRequestShutdown) -> AsyncResult<()>
     {
         // may require error handling once it goes huge
         // , the `value()` returns `Bytes`, require 3rd-party crate `bytes`

@@ -1,7 +1,7 @@
 use bytes::Bytes;
 use async_trait::async_trait;
 
-use crate::{Connection, AsyncResult, Parse, Frame};
+use crate::{Connection, AsyncResult, Parse, Frame, SingleRequestShutdown};
 use crate::db::FakeDatabase;
 use crate::cmd::{Command as PubCommand, private_part::Command as PrivCommand};
 
@@ -22,8 +22,8 @@ impl PubCommand for Get {
     // Apply the `Get` command to the specified `Db` instance.
     // The response is written to `dst`. This is called by the server in order
     // to execute a received command.
-    async fn apply(&self, fdb: &FakeDatabase, dst: &mut Connection)
-        -> AsyncResult<()>
+    async fn apply(&self, fdb: &FakeDatabase, dst: &mut Connection,
+                   _ :&mut SingleRequestShutdown) -> AsyncResult<()>
     {
         let response = match fdb.get(self.key()) {
             Ok(v) => {

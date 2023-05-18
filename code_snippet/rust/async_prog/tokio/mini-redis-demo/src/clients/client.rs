@@ -147,7 +147,7 @@ impl Client {
         // if the input channel list is empty, server acknowledges as unsubscribing
         // from all subscribed channels, so we assert that the unsubscribe list received
         // matches the client subscribed one
-        let num = if channels.is_empty() {
+        let _num = if channels.is_empty() {
             self.subscribed_channels.len()
         } else {
             channels.len()

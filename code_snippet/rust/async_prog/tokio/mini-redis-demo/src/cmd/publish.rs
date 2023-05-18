@@ -1,7 +1,7 @@
 use bytes::Bytes;
 use async_trait::async_trait;
 
-use crate::{Connection, AsyncResult, Parse, Frame};
+use crate::{Connection, AsyncResult, Parse, Frame, SingleRequestShutdown};
 use crate::cmd::{Command as PubCommand, private_part::Command as PrivCommand};
 use crate::db::FakeDatabase;
 
@@ -19,7 +19,8 @@ impl Publish {
 
 #[async_trait]
 impl PubCommand for Publish {
-    async fn apply(&self, db:&FakeDatabase, dst:&mut Connection) -> AsyncResult<()>
+    async fn apply(&self, db:&FakeDatabase, dst:&mut Connection,
+                   _ :&mut SingleRequestShutdown) -> AsyncResult<()>
     {
         let response = match db.publish(&self.channel, &self.message)
         {

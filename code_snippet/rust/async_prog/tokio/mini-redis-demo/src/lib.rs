@@ -12,10 +12,15 @@ pub use frame::{Frame};
 pub mod clients;
 pub use clients::{Client}; 
 
+mod shutdown;
+pub use shutdown::{SingleRequestShutdown}; 
+
 pub mod db;
 pub mod cmd;
 
+
 pub const DEFAULT_PORT:u16 = 6379;
+pub const MAX_CONNECTIONS:u16 = 10;
 
 // the AsyncError could be used as return type of any async function.
 // why adding `Send` trait ?

@@ -188,6 +188,16 @@ async fn main() ->  AsyncResult<()> {
     });
     subscriber3.await.unwrap();
     publisher3.await.unwrap();
+    let subscriber_hang = tokio::spawn(async {
+        let url:String = format!("127.0.0.1:{}",  DEFAULT_PORT);
+        let mut myc = Client::connect(url).await .unwrap();
+        let mut expect_recv_data: HashMap<String, Vec<String>> = HashMap::new();
+        let data = vec!["rotti".to_string()];
+        expect_recv_data.insert("food".to_string(), data);
+        let _ = _run_subscription_receive_streaming_message(
+            &expect_recv_data, &mut myc).await;
+    });
+    subscriber_hang.await.unwrap();
     println!("end of mini-redis client test");
     Ok(())
 } // end of main
@@ -212,6 +222,22 @@ async fn _run_publish_messages(pairs:Vec<(&str, &str)>, dly:u16)
 
 async fn _run_subscription (expect_recv_data:&HashMap<String, Vec<String>>,
                             myc:&mut Client) -> AsyncResult<()>
+{
+    let _future = _run_subscription_receive_streaming_message (
+        expect_recv_data, myc);
+    if let Ok(actual_recv_data) = _future.await {
+        for k in expect_recv_data.keys() {
+            let expect_seq = expect_recv_data.get(k).unwrap();
+            let actual_seq = actual_recv_data.get(k).unwrap();
+            assert_eq!(expect_seq, actual_seq);
+        }
+    }
+    Ok(())
+} // end of _run_subscription
+
+async fn _run_subscription_receive_streaming_message (
+    expect_recv_data:&HashMap<String, Vec<String>>,
+    myc:&mut Client) -> AsyncResult<HashMap<String, Vec<String>>>
 {
     let mut actual_recv_data: HashMap<String, Vec<String>> = HashMap::new();
     let mut subscribing_channels:Vec<String> = vec![];
@@ -242,11 +268,6 @@ async fn _run_subscription (expect_recv_data:&HashMap<String, Vec<String>>,
                      , msg.channel);
         }
     }
-    for k in expect_recv_data.keys() {
-        let expect_seq = expect_recv_data.get(k).unwrap();
-        let actual_seq = actual_recv_data.get(k).unwrap();
-        assert_eq!(expect_seq, actual_seq);
-    }
-    Ok(())
-} // end of _run_subscription
+    Ok(actual_recv_data)
+} // end of _run_subscription_receive_streaming_message
 

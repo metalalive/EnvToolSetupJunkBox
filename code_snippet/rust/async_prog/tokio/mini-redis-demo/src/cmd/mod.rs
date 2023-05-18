@@ -1,4 +1,4 @@
-use crate::{Frame, Connection, Parse, AsyncResult};
+use crate::{Frame, Connection, Parse, AsyncResult, SingleRequestShutdown};
 use crate::db::FakeDatabase;
 use crate::cmd::private_part::Command as PrivCommand;
 
@@ -61,7 +61,8 @@ pub trait Command : PrivCommand + Send
     // 1. visibility of the trait implies to all its methods
     // 2. caller cannot move the ownership of the instance through all trait methods
     //    because the caller doesn't know the size.
-    async fn apply(&self, db:&FakeDatabase, dst:&mut Connection) -> AsyncResult<()>;
+    async fn apply(&self, db:&FakeDatabase, dst:&mut Connection,
+                   shutdown:&mut SingleRequestShutdown) -> AsyncResult<()>;
 } // end of trait
 
 
