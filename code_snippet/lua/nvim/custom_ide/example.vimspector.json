@@ -1,0 +1,17 @@
+{
+  "$schema": "https://puremourning.github.io/vimspector/schema/vimspector.schema.json",
+  "configurations": {
+    "neovim-codelldb-rust": {
+      "adapter": "vscode-cpptools",
+      "filetypes": ["rust", "c"],
+      "configuration": {
+        "stopAtEntry": true,
+        "MIMode": "gdb",
+        "request": "launch",
+        "program": "${workspaceRoot}/path/to/your/executable-name"
+      },
+      "default": false,
+      "autoselect": false
+    }
+  }
+}
