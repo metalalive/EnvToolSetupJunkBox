@@ -9,8 +9,11 @@ return require('packer').startup(
 function()
     -- Packer can manage itself
     use 'wbthomason/packer.nvim'
-    use 'williamboman/mason.nvim'    
-    use 'williamboman/mason-lspconfig.nvim'
+    -- `mason` is a Python-based package management tool used for only
+    -- installing debugging tools like CodeLLDB, if you don't need it 
+    -- you can keep it commented.
+    --use 'williamboman/mason.nvim'
+    --use 'williamboman/mason-lspconfig.nvim'
     -- Rust tools
     use 'neovim/nvim-lspconfig'
     use 'simrat39/rust-tools.nvim'
@@ -21,11 +24,11 @@ function()
     -- Useful completion sources:
     use 'hrsh7th/cmp-nvim-lua'
     use 'hrsh7th/cmp-nvim-lsp-signature-help'
-    use 'hrsh7th/cmp-vsnip'                             
-    use 'hrsh7th/cmp-path'                              
-    use 'hrsh7th/cmp-buffer'                            
+    use 'hrsh7th/cmp-vsnip'
+    use 'hrsh7th/cmp-path'
+    use 'hrsh7th/cmp-buffer'
     use 'hrsh7th/vim-vsnip'
-    -- work with codelldb 
-    use 'puremourning/vimspector'                            
+    -- work with other debuggers e.g. codelldb, vscode-tools, GDB
+    use 'puremourning/vimspector'
 end
 )

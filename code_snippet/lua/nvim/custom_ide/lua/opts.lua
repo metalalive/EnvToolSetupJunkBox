@@ -13,8 +13,9 @@ vim.cmd([[
 ]])
 
 vim.cmd([[
-    let g:vimspector_sidebar_width = 85
+    let g:vimspector_sidebar_width = 64
     let g:vimspector_bottombar_height = 15
-    let g:vimspector_terminal_maxwidth = 70
-]])
+    let g:vimspector_terminal_maxwidth = 60
+    let g:vimspector_terminal_minwidth = 35
+]]) -- the parameters for adjusting window layout are limited in `vimspector`
 

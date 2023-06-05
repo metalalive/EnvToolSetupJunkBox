@@ -4,17 +4,17 @@ require('keys') -- Keymaps
 require('plug') -- Plugins
 
 -- Mason Setup
-require("mason").setup({
-    ui = {
-        icons = {
-            package_installed = "",
-            package_pending = "",
-            package_uninstalled = "",
-        },
-    }
-})
-
-require("mason-lspconfig").setup()
+-- require("mason").setup({
+--     ui = {
+--         icons = {
+--             package_installed = "",
+--             package_pending = "",
+--             package_uninstalled = "",
+--         },
+--     }
+-- })
+-- 
+-- require("mason-lspconfig").setup()
 
 local rt = require("rust-tools")
 
@@ -30,10 +30,10 @@ local rt = require("rust-tools")
 rt.setup({
   server = {
     on_attach = function(_, bufnr)
-      -- Hover actions
+      -- Hover actions, show type / variable definition in a small popup
       vim.keymap.set("n", "<C-space>", rt.hover_actions.hover_actions, { buffer = bufnr })
-      -- Code action groups
-      vim.keymap.set("n", "<Leader>a", rt.code_action_group.code_action_group, { buffer = bufnr })
+      -- Expand macro, show macro definition
+      vim.keymap.set("n", 'mac', rt.expand_macro.expand_macro, { buffer = bufnr })
       -- key mapping for go-to definition.
       -- https://neovim.io/doc/user/lsp.html#lsp-buf
       vim.api.nvim_buf_set_keymap(0, 'n', '<C-]>',
@@ -108,8 +108,7 @@ cmp.setup({
     ['<Tab>']   = cmp.mapping.select_next_item(),
     ['<S-Up>'] = cmp.mapping.scroll_docs(-3),
     ['<S-Down>'] = cmp.mapping.scroll_docs(3),
-    ['<C-Space>'] = cmp.mapping.complete(),
-    ['<C-e>'] = cmp.mapping.close(),
+    ['<C-e>'] = cmp.mapping.complete(),
     ['<Esc>'] = cmp.mapping.close(),
     ['<CR>'] = cmp.mapping.confirm({
       behavior = cmp.ConfirmBehavior.Insert,
@@ -119,9 +118,9 @@ cmp.setup({
   -- Installed sources:
   sources = {
     { name = 'path' },                              -- file paths
-    { name = 'nvim_lsp', keyword_length = 3 },      -- from language server
+    { name = 'nvim_lsp', keyword_length = 1 },      -- from language server
     { name = 'nvim_lsp_signature_help'},            -- display function signatures with current parameter emphasized
-    { name = 'nvim_lua', keyword_length = 2},       -- complete neovim's Lua runtime API such vim.lsp.*
+    { name = 'nvim_lua', keyword_length = 3},       -- complete neovim's Lua runtime API such vim.lsp.*
     { name = 'buffer', keyword_length = 2 },        -- source current buffer
     { name = 'vsnip', keyword_length = 2 },         -- nvim-cmp source for vim-vsnip 
     { name = 'calc'},                               -- source for math calculation
