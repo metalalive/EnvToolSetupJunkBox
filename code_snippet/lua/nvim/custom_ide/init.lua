@@ -34,20 +34,12 @@ rt.setup({
       vim.keymap.set("n", "<C-space>", rt.hover_actions.hover_actions, { buffer = bufnr })
       -- Expand macro, show macro definition
       vim.keymap.set("n", 'mac', rt.expand_macro.expand_macro, { buffer = bufnr })
-      -- key mapping for go-to definition.
-      -- https://neovim.io/doc/user/lsp.html#lsp-buf
-      vim.api.nvim_buf_set_keymap(0, 'n', '<C-]>',
-          '<cmd>lua vim.lsp.buf.definition()<CR>',
-	  { noremap = true, silent = true })
-      -- get back from the definition, by the key combo below :
-      -- 1. Ctrl + o , see https://github.com/prabirshrestha/vim-lsp/issues/434
-      -- 2. Ctrl + t , it might be Ubuntu package `ctag` doing the trick.
     end,
   },
 }) -- end of rust-tools setup
 
 -- does the plug-in `lspconfig` blocks `rust-tools` ?
--- local default_lsp = require("lspconfig")
+local default_lsp = require("lspconfig")
 -- default_lsp.rust_analyzer.setup({
 --     settings = {
 -- 	["rust_analyzer"] = {
@@ -56,6 +48,31 @@ rt.setup({
 --     }
 -- })
 -- reference : https://rust-analyzer.github.io/manual.html#go-to-definition
+
+default_lsp.pylsp.setup({
+    settings = {
+    pylsp = {
+    plugins = {
+	maxLineLength = 250,
+	jedi_completion = {
+	    include_class_objects = true,
+	    include_function_objects = true
+	},
+	jedi = {
+	    environment = os.getenv("VENV_PATH_PYLSP")
+	} -- where OS env vars kick in
+    }}}
+})
+
+-- key mapping for go-to definition.
+-- https://neovim.io/doc/user/lsp.html#lsp-buf
+vim.api.nvim_buf_set_keymap(0, 'n', '<C-]>',
+  '<cmd>lua vim.lsp.buf.definition()<CR>',
+  { noremap = true, silent = true })
+-- get back from the definition, by the key combo below :
+-- 1. Ctrl + o , see https://github.com/prabirshrestha/vim-lsp/issues/434
+-- 2. Ctrl + t , it might be Ubuntu package `ctag` doing the trick.
+
 
 -- Language Server Protocol Diagnostics Options Setup 
 local diagno_sign_reg = function(opts)
