@@ -1,5 +1,5 @@
 
-### Python 3.9
+### Python 3.12
 Tested on Ubuntu 14.04LTS & Debain 9 (Raspbian Stretch)
 
 * Install dependency packages
@@ -38,6 +38,8 @@ checking for X509_VERIFY_PARAM_set1_host in libssl... yes
 checking for --with-ssl-default-suites... openssl
 ```
 
+> In 3.12, the configuration script starts checking stdlib extension module, it would complain that some modules are missing, such as `_ssl` or `_hashlib`, strangely , the build process later can be completed without the affect , and later `pip` installation works without TLS or security issues.
+
 * start building
 ```
 make build_all -j 1 >& build.log
@@ -57,9 +59,9 @@ LibreSSL 2.6.4 and earlier do not provide the necessary APIs, https://github.com
 * If Python is built successfully, you should see executable file `python` in the Python source directory. It's optional to run `make install`, instead you can run python directly at the source folder :
 ```
 user@localhost: ~/xxx/$ ./python 
-Python 3.9.0a5 (default, Apr  6 2020, 13:28:07) 
-[GCC x.x.x] on linux
+Python 3.12.0 (heads/3.12:0fb18b0, Oct 16 2023, 00:32:25) [GCC 10.3.0] on linux
 Type "help", "copyright", "credits" or "license" for more information.
+>>> import datetime
 >>> 
 ```
 
@@ -74,7 +76,7 @@ Type "help", "copyright", "credits" or "license" for more information.
 
 * Recheck `pip` version by running `./python -m pip --version`, you should see result like this (pip version might be different in your case):
 ```
-pip 21.1.3 from /usr/local/lib/python3.9/site-packages/pip (python 3.9)
+pip 23.2.1 from /usr/local/lib/python3.9/site-packages/pip (python 3.9)
 ```
 
 * Tty install whatever packages you need using `pip` (example below), For those who built openssl from source, recheck the execution result, you should see download progress of the packages.  
