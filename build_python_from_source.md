@@ -1,6 +1,8 @@
 
 ### Python 3.12
-Tested on Ubuntu 14.04LTS & Debain 9 (Raspbian Stretch)
+- Tested on Ubuntu 14.04LTS & Debain 9 (Raspbian Stretch)
+- OpenSSL 3.1.3 (version `3.x` required since python 3.11 , see [python developer guide](https://devguide.python.org/getting-started/setup-building/))
+  - Both of source folder and installation folder are required
 
 * Install dependency packages
 ```
@@ -9,43 +11,41 @@ sudo apt-get install -y build-essential tk-dev libncurses5-dev libncursesw5-dev 
              liblzma-dev zlib1g-dev libffi-dev tar wget vim
 ```
 
-* Download [Python source code](https://github.com/python/cpython) & Go to the downloaded Python source directory. **Please avoid ALPHA release or BETA release , always use FINAL release instead, you will save a lot of time**
+* Download [Python source code](https://github.com/python/cpython) & Go to the downloaded Python source directory.
+> Please avoid **ALPHA release or BETA release**,
+> always use **FINAL release** instead, you will save a lot of time.
 
-* Configure everything required (you may need root priviledge to do things). For those who built OpenSSL from source for whatever reasons, you better specify path of your openssl installation path, with `--with-openssl`, `CFLAGS` and `LDFLAGS` options when running `./configure` below:
+* Configure everything required (you might need root priviledge to do things). For those who built OpenSSL from source for whatever reasons, it is required to specify the path to your openssl installation / codebase, with the options `--with-openssl`, `--with-openssl-rpath`, `CFLAGS` and `LDFLAGS`  when running `./configure` below:
 
 ```
-./configure  --with-openssl=/PATH/TO/YOUR/OPENSSL_INSTALL_FODLER/ \
-    --enable-optimizations \
-    --with-ssl-default-suites=openssl \
-    CFLAGS="-I/PATH/TO/YOUR/OPENSSL_INSTALL_FODLER/include" \
-    LDFLAGS="-L/PATH/TO/YOUR/OPENSSL_INSTALL_FODLER/"
+./configure --enable-optimizations --with-ssl-default-suites=openssl \
+    --with-openssl=/PATH/TO/YOUR/OPENSSL/CODEBASE/ \
+    --with-openssl-rpath=/PATH/TO/YOUR/OPENSSL/INSTALLED/lib64 \
+    CFLAGS="-I/PATH/TO/YOUR/OPENSSL/INSTALLED/include" \
+    LDFLAGS="-L/PATH/TO/YOUR/OPENSSL/INSTALLED/lib64"
 ```
+
 
 * Check out `config.log`. For those who built OpenSSL from source, make sure you get following results :
 ```
-configure:xxxxx: checking for openssl/ssl.h in /PATH/TO/YOUR/OPENSSL_INSTALL_FODLER/
-configure:xxxxx: result: yes
-configure:xxxxx: checking whether compiling and linking against OpenSSL works
-configure:xxxxx: result: yes
-configure:xxxxx: checking for X509_VERIFY_PARAM_set1_host in libssl
-configure:xxxxx: result: yes
-```
-for newer version, the log may look like this :
-```
-checking for openssl/ssl.h in /PATH/TO/YOUR/OPENSSL_INSTALL_FODLER/ ... yes
-checking whether compiling and linking against OpenSSL works... yes
-checking for X509_VERIFY_PARAM_set1_host in libssl... yes
 checking for --with-ssl-default-suites... openssl
+...
+checking for include/openssl/ssl.h in /PATH/TO/YOUR/OPENSSL/CODEBASE/... yes
+checking whether compiling and linking against OpenSSL works... yes
+...
+checking whether OpenSSL provides required ssl module APIs... yes
+checking whether OpenSSL provides required hashlib module APIs... yes
+...
+checking for stdlib extension module _ssl... yes
+checking for stdlib extension module _hashlib... yes
 ```
-
-> In 3.12, the configuration script starts checking stdlib extension module, it would complain that some modules are missing, such as `_ssl` or `_hashlib`, strangely , the build process later can be completed without the affect , and later `pip` installation works without TLS or security issues.
 
 * start building
 ```
 make build_all -j 1 >& build.log
 ```
 
-* Recheck build.log. For those who built OpenSSL from source, make sure you DON'T have the following message in your `build.log`, otherwise you will get some troubles later when you try to install packages through `pip`.
+* Recheck build.log. For those who built OpenSSL from source, make sure you DON'T have the following message in your `build.log`, otherwise you will get secure connection failures later when you try to download packages through `pip`.
 ```
 Failed to build these modules:
 _ssl
@@ -88,16 +88,10 @@ pip 23.2.1 from /usr/local/lib/python3.9/site-packages/pip (python 3.9)
 
 
 #### Reference
-
-https://devguide.python.org/setup/
-
-https://packaging.python.org/tutorials/installing-packages/
-
-https://bugs.python.org/issue34028
-
-https://www.guru99.com/pytest-tutorial.html
-
-https://stackoverflow.com/questions/51373063/pip3-bad-interpreter-no-such-file-or-directory
-
-https://stackoverflow.com/questions/53543477/building-python-3-7-1-ssl-module-failed
+- https://devguide.python.org/setup/
+- https://packaging.python.org/tutorials/installing-packages/
+- https://bugs.python.org/issue34028
+- https://www.guru99.com/pytest-tutorial.html
+- https://stackoverflow.com/questions/51373063/pip3-bad-interpreter-no-such-file-or-directory
+- https://stackoverflow.com/questions/53543477/building-python-3-7-1-ssl-module-failed
 
