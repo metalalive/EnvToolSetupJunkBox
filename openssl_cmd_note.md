@@ -1,7 +1,7 @@
 ### Certificate setup
 
 #### generate CA cert / (RSA) private key
-```
+```bash
 openssl genrsa -out ca_priv_key.pem  2048
 
 openssl req -new -x509 -days 180 -key ca_priv_key.pem -keyform PEM -out ca_crt.pem -outform PEM -sha384
@@ -10,9 +10,18 @@ openssl x509 -text -noout -in ca_crt.pem -inform PEM
 ```
 
 #### generate RSA public key derived from any given RSA private key
+```bash
+openssl rsa  -in  ca_priv_key.pem  -outform PEM -pubout -out /path/to/rsa_pubkey.pem
 ```
-openssl rsa  -in  ca_priv_key.pem  -outform PEM -pubout -out rsa_pubkey.pem
+To extract modulus from the public key PEM file, and encoded it as Base64 string :
+```bash
+openssl rsa -pubin -inform PEM -text -noout -in   /path/to/rsa_pubkey.pem \
+    |  awk "/Modulus/{flag=1; next} /Exponent/{flag=0} flag" \
+    |  tr -d ': \n'  |  xxd -r -p | base64
 ```
+Note
+- `awk` narrows down the output from the `Modulus` section to  the `Exponent` section
+- optionally you can output extracted byte sequence to a file using `xxd`
 
 #### generate server cert, sign it using CA cert 
 
