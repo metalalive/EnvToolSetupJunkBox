@@ -27,6 +27,7 @@ local rt = require("rust-tools")
 --   These `rust-analyzer` servers will NOT terminate automatically
 --   even after users go back from the symbol definition to their
 --   original files.
+--   TODO, switch to this alternative : https://github.com/pr2502/ra-multiplex
 rt.setup({
   server = {
     on_attach = function(_, bufnr)
@@ -35,6 +36,12 @@ rt.setup({
       -- Expand macro, show macro definition
       vim.keymap.set("n", 'mac', rt.expand_macro.expand_macro, { buffer = bufnr })
     end,
+    settings = {
+        ['rust-analyzer'] = {
+            cachePriming = {enable = false},
+            lru = {capacity = 32}
+        }
+    }
   },
 }) -- end of rust-tools setup
 
