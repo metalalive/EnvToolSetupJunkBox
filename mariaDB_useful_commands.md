@@ -196,15 +196,19 @@ Note:
 -------------------------------------------------------------------------------------------
 
 ### Index
-#### Show all indexes of a table
+#### [Show all indexes](https://mariadb.com/kb/en/show-index/) of a table
 ```
 SHOW INDEX FROM <YOUR_TABLE_NAME>;
 ```
-#### Compound primary key in a table
+Assume there is compound primary key in a table
+```sql
+CREATE TABLE <YOUR_TABLE_NAME> (
+   t1id INT NOT NULL,
+   t2id INT NOT NULL,
+   t3id VARCHAR(35) NOT NULL,
+   PRIMARY KEY (t1id, t2id, t3id(2))
+);
 ```
-CREATE TABLE <YOUR_TABLE_NAME> (t1id INT, t2id INT, PRIMARY KEY (t1id, t2id));
-```
-The SQL statement above also works in **postgre SQL** and **Oracle**.
 By checking the table schema, you should see both of `t1id` and `t2id` are marked as primary key.
 ```
 > SHOW COLUMNS FROM <YOUR_TABLE_NAME>;
@@ -213,9 +217,10 @@ By checking the table schema, you should see both of `t1id` and `t2id` are marke
 +------------+------------------+------+-----+---------+-------+
 | t1id       | int(4) unsigned  | NO   | PRI | NULL    |       |
 | t2id       | int(4) unsigned  | NO   | PRI | NULL    |       |
+| t3id       | varchar(35)      | NO   | PRI | NULL    |       |
 +------------+------------------+------+-----+---------+-------+
 ```
-The result set of the SQL statement above would be :
+The result of the statement `SHOW INDEX` above would be :
 ```
 > SHOW INDEX FROM <YOUR_TABLE_NAME>;
 -+------------------+------------+------------+--------------+-------------+-----------+-------------+----------+--------+------+------------+---------+
@@ -223,12 +228,13 @@ The result set of the SQL statement above would be :
 +-------------------+------------+------------+--------------+-------------+-----------+-------------+----------+--------+------+------------+---------+
 | <YOUR_TABLE_NAME> |          0 | PRIMARY    |            1 | t1id        | A         |           0 |     NULL | NULL   |      | BTREE      |         |
 | <YOUR_TABLE_NAME> |          0 | PRIMARY    |            2 | t2id        | A         |           0 |     NULL | NULL   |      | BTREE      |         |
+| <YOUR_TABLE_NAME> |          0 | PRIMARY    |            3 | t3id        | A         |           0 |        2 | NULL   |      | BTREE      |         |
 +-------------------+------------+------------+--------------+-------------+-----------+-------------+----------+--------+------+------------+---------+
 ```
 In the example above :
 * `key_name` indicates a valid index `<VALID_INDEX_NAME>`, in `<YOUR_TABLE_NAME>` the index name is `PRIMARY` which is used by the PRIMARY KEY indexing and consists of 2 columns : `t1id` and `t2id`.
-* `Seq_in_index` indicates the ordering of the columns `t1id` and `t2id` in the [multiple-part index](https://dev.mysql.com/doc/refman/5.7/en/range-optimization.html#range-access-multi-part)  named `PRIMARY`, that shows how InnoDB organizes the compound key in its internal storage structure (typically B-tree). This provides advantages when you can only provide part of key column(s) (not all of them, e.g. only provide `t1id` in WHERE clause) in the SQL statement, so each record can be found and still using the `PRIMARY` index  (without full table scan). 
-* each entry of the index contains 8-byte data, upper 4-byte part is used to store for one column of the compound key (either `t1id` or `t2id`), lower 4-byte part is used to store for the other column.
+* `Seq_in_index` indicates the ordering of the columns `t1id`, `t2id`, and `t3id` in the [multiple-part index](https://dev.mysql.com/doc/refman/5.7/en/range-optimization.html#range-access-multi-part)  named `PRIMARY`, that shows how InnoDB organizes the compound key in its internal storage structure (typically B-tree). This provides advantages when you can only provide part of key column(s) (not all of them, e.g. only provide `t1id` in WHERE clause) in the SQL statement, so each record can be found and still using the `PRIMARY` index  (without full table scan). 
+* each entry in the index contains 10 bytes, upper 4-byte part is used to store `t1id`, middle 4-byte part stores `t2id`, lower 2 bytes is for the first 2 bytes of `t3id` column, since the table was created with `t3id(2)` in the primary key.
 * One table may have more than one indexes, e.g. extra index for unique constraint, index for each foreign-key column (MySQL and MariaDB actually do so by default).
 * Number of indexes within a table has tradeoff, more indexes might (or might not, sometimes) speed up read operations, but slow down write operations  (especially insertions) because your database needs to maintain all existing indexes of the table on the single write.
 
