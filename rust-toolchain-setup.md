@@ -52,6 +52,7 @@ Ensure following dependencies exist, they've been in separate github repositorie
      "clippy", # linter
      "rustfmt", # code formatter
      "rust-analyzer", # for IDE language server
+     "src", # not sure if this indicates `rust-src`
   ]
   profiler = false # will cause static library linking error if enable , FIXME
 
@@ -90,6 +91,8 @@ Finally installation
 python3 ./x.py  install
 ```
 - Be sure you have access permission to installed folder
+- If you need to use other tools that parse source code of standard library (such as `rust-analyzer` loading syntax trees from each crate) , recheck local path to the source code , usually these tools refer to the installation path  `{install.prefix}/lib/rustlib/src/rust/library` , under the folder `library` there should be subfolders `std` present, that is top level of rust module hierarchy.
+  - seems that the build script in rust git repo does not automatically set up the links for this
 
 ### Hardware constraint
 If your Intel CPU does NOT support [AVX-512 instruction set](https://en.wikipedia.org/wiki/AVX-512), modify the build script by following :
