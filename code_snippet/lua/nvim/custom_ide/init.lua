@@ -16,6 +16,12 @@ require('plug') -- Plugins
 -- 
 -- require("mason-lspconfig").setup()
 
+local handle = io.popen('rustc --print sysroot')
+local rust_installed_path = handle:read('*a')
+handle:close()
+local proc_macro_path = rust_installed_path .. '/libexec/rust-analyzer-proc-macro-srv'
+local proc_macro_path = '/PATH/TO/installed/rust/' .. '/libexec/rust-analyzer-proc-macro-srv'
+
 local rt = require("rust-tools")
 
 -- CAUTION :
@@ -39,7 +45,18 @@ rt.setup({
     settings = {
         ['rust-analyzer'] = {
             cachePriming = {enable = false},
-            lru = {capacity = 32}
+            cargo = {
+		-- this will run `rustc --print sysroot` in external shell env	
+		sysroot = 'discover',
+		-- note another attribute `sysrootSrc` defaults to '{cargo.sysroot}/lib/rustlib/src/rust/library'
+		-- , make sure it is a valid path to source code of rust standard library. 
+            },
+            procMacro = { -- required for parsing macros in rust modules in nvim
+		enable = true,
+		server = proc_macro_path,
+		-- looks like the config parameter here has to be string literal, not dynamically generated
+            },
+            lru = {capacity = 32}					
         }
     }
   },
