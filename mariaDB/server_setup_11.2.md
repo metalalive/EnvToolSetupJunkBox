@@ -80,30 +80,11 @@ It must be root, the PAM authentication plugin doesn't work otherwise..
 ```
 
 #### Change root password for the first time
-[Start mariadb server](./command-reference.md#start-mariadb-server) then run the command below:
+[Start mariadb server](./command-reference.md#start-mariadb-server) then run [`./bin/mariadb-secure-installation`](https://mariadb.com/kb/en/mariadb-secure-installation/), which gives you the option of removing the test
+databases and anonymous user created by default.  This is strongly recommended for servers that connect to network.
 
-```bash
-./bin/mysqladmin -u root password 'new-password'
-./bin/mysqladmin -u root -h localhost password 'new-password'
-```
-
-Alternatively you can run `./bin/mysql_secure_installation`, which will also give you the option of removing the test
-databases and anonymous user created by default.  This is strongly recommended for production servers.
-
-See the MariaDB Knowledgebase at http://mariadb.com/kb or the MySQL manual for more instructions.
-
-You can start the MariaDB daemon with:
-```
-./bin/mysqld_safe --datadir='./data'
-```
-
-You can test the MariaDB daemon with `mysql-test-run.pl`
-```
-cd './mysql-test' ; perl mysql-test-run.pl
-```
 
 ### Reference
 - [MariaDB Development Team Jira](http://mariadb.org/jira)
 - [MariaDB - Generic Build Instructions](https://mariadb.com/kb/en/generic-build-instructions/)
-* [Get the code, build it, test it](https://mariadb.org/get-involved/getting-started-for-developers/get-code-build-test/)
-* [How To Reset Your MySQL or MariaDB Root Password](https://www.digitalocean.com/community/tutorials/how-to-reset-your-mysql-or-mariadb-root-password)
+- [How To Reset Your MariaDB Root Password](https://www.digitalocean.com/community/tutorials/how-to-reset-your-mysql-or-mariadb-root-password)
