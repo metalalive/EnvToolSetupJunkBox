@@ -1,27 +1,46 @@
-----------------------------------------------------------------------
-
-## Useful commands for database management
-
+## MariaDB Command Reference
 ### Basic
 
-##### start MariaDB server:
-```
-sudo -u <OS_ACCOUNT_FOR_MARIADB>  /PATH/TO/MARIADB/INSTALL/bin/mysqld_safe  --datadir='PATH/TO/DATABASE/FOLDER'  &
+#### Start server:
+##### v10.x
+```bash
+sudo -u <OS_ACCOUNT_FOR_MARIADB>  /PATH/TO/MARIADB/INSTALL/bin/mysqld_safe \
+   --datadir='PATH/TO/DATABASE/FOLDER'  &
 ```
 or launch DB server with configuration file in which you can set all valid variables :
+```bash
+sudo -u <OS_ACCOUNT_FOR_MARIADB>  env LD_LIBRARY_PATH=$LD_LIBRARY_PATH \
+    /PATH/TO/MARIADB/INSTALL/bin/mysqld_safe \
+    --defaults-file='PATH/TO/CONFIG_FILE'  &
 ```
-sudo -u <OS_ACCOUNT_FOR_MARIADB>  /PATH/TO/MARIADB/INSTALL/bin/mysqld_safe  --defaults-file='PATH/TO/CONFIG_FILE'  &
+##### v11.x
+- similar to the command above in v10.x, replace `mysqld_safe` with `mariadbd-safe`
+- the option `--defaults-file` is still the same as v10.x
+- the command `env` is optional, to provide modified environment e.g. passing extra search paths to sudo operation.
+
+Below is the configuration example
+```ini
+[mariadbd]
+port = 3307
+datadir=/PATH/TO/installed/mariaDB/data
+log_error=/PATH/TO/installed/mariaDB/localhost.err
+log_warnings=9
+general_log=1
+general_log_file=/PATH/TO/installed/mariaDB/localhost.log
+pid-file=./pid_file
 ```
 
-##### Shutdown MariaDB server
-```
+#### Shutdown server
+```bash
 sudo -u <OS_ACCOUNT_FOR_MARIADB>  kill -SIGTERM  <mysqld_PID>
 ```
 
 ##### Login MariaDB through interactive command line interface :
+```bash
+sudo -u <OS_ACCOUNT_FOR_MARIADB>  /PATH/TO/MARIADB/INSTALL/bin/mysql --user=<USER_ACCOUNT> \
+    --password  -host=<IP_OR_DOMAIN_NAME>
 ```
-sudo -u <OS_ACCOUNT_FOR_MARIADB>  /PATH/TO/MARIADB/INSTALL/bin/mysql -u  <USER_ACCOUNT> -p -h <IP_OR_DOMAIN_NAME>
-```
+For v11.x, the command is similar, replace `mysql` with `mariadb`.
 
 ##### Check version
 ```
