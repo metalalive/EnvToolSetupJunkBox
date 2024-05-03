@@ -6,27 +6,25 @@ MariaDB version 11.2.3
 * GCC 10.3.0
 * OpenSSL 3.1.4, built from source
 
-
-### Pre-requisite
-Check the libraies required by the build [in this doc](./mariaDB/server_setup_10.3.md#pre-requisite) 
+#### Pre-requisite
+Check the libraies required by the build [in this doc](./server_setup_10.3.md#pre-requisite) 
 
 ### Download source
 For those who work with limited disk space, It's suggested to do shallow clone from github.
-Check out the instructions at [here](./git_setup.md).
+Check out the instructions at [here](../git_setup.md).
 
 Note some of subfolders are linked to other git repositories,
 please ensure these dependent git codebases are also cloned to your local environment.
 
 ### Clean up before build
 * clean up the previous build (if exists). However it doesn't seem to reduce the size of `.git` ?
-```
+```bash
 git clean -xffd
 git submodule foreach --recursive git clean -xffd
 ```
 
-### Configuration
+### Configuration before build
 Run `cmake`
-
 ```bash
 CC="/PATH/TO//gcc/10.3.0/bin/gcc"  cmake .. -LH \
     -DBUILD_CONFIG=mysql_release   -DCMAKE_BUILD_TYPE=Debug \
@@ -45,33 +43,46 @@ Note that :
 - optional storage engines can be `off`, e.g:
   `WITHOUT_ROCKSDB=true`, `WITHOUT_TOKUDB=true`, `WITHOUT_MROONGA=true`, `WITHOUT_CONNECT=true`
 
-#### Modify source files if building with GCC >= 6.3
-
-Build errors will happen on the OS with GCC toolchain verison >= 6.3 , for example Raspbian Stretch. 
-MariaDB sets build option `-Werror` to compile each file, all warnings will be treated as error.
-
-##### Build
+### Build
 - Simply run `make`
 - Build process takes about 1-2 hours in Intel core 5.
 - Minimum disk space required : 5GB
 - fix [Uninitialized warnings](https://gcc.gnu.org/onlinedocs/gcc-10.3.0/gcc/Warning-Options.html), sometime this could be error when the build script sets the flag `-WError` along with `-Wuninitialized` or `-Wmaybe-uninitialized` in gcc, this may happen in several places in the codebase. Try manually fix it without breaking the original logic.
 
-##### Install
+#### Install
 - Simply run `make install`
 - It's OK to run `make install` without `root` privilege,  then you must ensure that current user account  of your target Linux system has full access permission to the path `CMAKE_INSTALL_PREFIX`.
 
 
-
-
-
-
-
-#### Configuration after Installation (TODO)
-
-To start `mysqld` at boot time you have to copy `support-files/mysql.server` to the right place for your system
-
-PLEASE REMEMBER TO SET A PASSWORD FOR THE MariaDB root USER ! To do so, start the server, then issue the following commands:
+### Configuration after Build and Installation
+#### System Table installation
+```bash
+cd <CMAKE_INSTALL_PREFIX>
+sudo -u <DB_OS_UNAME> env LD_LIBRARY_PATH=$LD_LIBRARY_PATH \
+    ./scripts/mariadb-install-db --user=<DB_OS_UNAME>   --datadir=${PWD}/data
 ```
+Note:
+- The script `mariadb-install-db` manages the system-table installation task
+- `<DB_OS_UNAME>` indicates to the login user that have full access to the database server in your operating system platform
+- You can wrap the script `mariadb-install-db` with the command `env` , which provides modified environment such as passing user-defined `LD_LIBRARY_PATH` to the sudo command. This will be helpful if you installed dependency libraries (e.g. OpenSSL) to non-default paths
+- `--datadir` indicates to the path which persists database tables
+
+TODO, following warning messages on system-table installation
+```bash
+This probably means that your libc libraries are not 100 % compatible
+with this binary MariaDB version. The MariaDB daemon, mariadbd, should work
+normally with the exception that host name resolving will not work.
+This means that you should use IP addresses instead of hostnames
+when specifying MariaDB privileges !
+chown: changing ownership of ‘./lib/plugin/auth_pam_tool_dir/auth_pam_tool’: Operation not permitted
+Couldn't set an owner to './lib/plugin/auth_pam_tool_dir/auth_pam_tool'.
+It must be root, the PAM authentication plugin doesn't work otherwise..
+```
+
+#### Change root password for the first time
+[Start mariadb server](./command-reference.md#start-mariadb-server) then run the command below:
+
+```bash
 ./bin/mysqladmin -u root password 'new-password'
 ./bin/mysqladmin -u root -h localhost password 'new-password'
 ```
@@ -92,6 +103,7 @@ cd './mysql-test' ; perl mysql-test-run.pl
 ```
 
 ### Reference
-- [MariaDB Dev-team Jira](http://mariadb.org/jira)
+- [MariaDB Development Team Jira](http://mariadb.org/jira)
+- [MariaDB - Generic Build Instructions](https://mariadb.com/kb/en/generic-build-instructions/)
 * [Get the code, build it, test it](https://mariadb.org/get-involved/getting-started-for-developers/get-code-build-test/)
 * [How To Reset Your MySQL or MariaDB Root Password](https://www.digitalocean.com/community/tutorials/how-to-reset-your-mysql-or-mariadb-root-password)
