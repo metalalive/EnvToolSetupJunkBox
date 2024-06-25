@@ -12,6 +12,29 @@ Manual installation with pre-built binary
   - `node --version`
   - `npm --version`
 
+## Frequently used npm commands
+List available versions excluding alpha / beta
+```bash
+npm show <your-package-name>@* version
+```
+List all available versions including alpha / beta
+```bash
+npm view <your-package-name> versions
+```
+Install specific version of npm package
+```bash
+npm install <your-package-name>@<specific-version>
+```
+Uninstall npm package
+```bash
+npm uninstall <your-package-name> 
+```
+List installed npm packages globally or locally
+```bash
+npm ls --location=local
+npm ls --location=global
+```
+
 ## Swagger
 - clone [`swagger-editor`](https://github.com/swagger-api/swagger-editor) and [`swagger-ui`](https://github.com/swagger-api/swagger-ui) from the respective repositories
 - switch to `swagger-editor` folder, install `http-server` module
