@@ -137,14 +137,16 @@ DELETE IGNORE FROM <YOUR_TABLE_NAME> WHERE <ANY_VALID_CONDITION_CLAUSE>;
 
 ### Privilege
 ##### List all columns (and their attributes) of a database table
-```
+```sql
 SHOW COLUMNS FROM <YOUR_TABLE_NAME>;
 ```
 
 ##### List attributes of all available database users
-```
-SELECT  host, user, max_connections, max_user_connections  FROM mysql.user
-SELECT Host, Db, User, Select_priv, Update_priv, grant_priv FROM mysql.db
+```sql
+SELECT  `host`, `user`, `max_connections` AS `max_conn`, `max_questions` AS `maxquery`, `max_updates`, \
+  ` max_user_connections` AS `max_usr_conn`  FROM `mysql`.`user`;
+
+SELECT `Host`, `Db`, `User`, `Select_priv`, `Update_priv`, `grant_priv` FROM `mysql`.`db` ;
 ```
 
 ##### Check user privilege
@@ -159,8 +161,9 @@ See [CREATE USER](https://mariadb.com/kb/en/create-user/)
 Quick example:
 ```
 CREATE USER '<NEW_DB_ACCOUNT>'@'<NEW_DB_HOSTNAME>' IDENTIFIED BY '<YOUR_PASSWORD_PLAIN_TEXT>' \
-    WITH  MAX_USER_CONNECTIONS 5  MAX_QUERIES_PER_HOUR 7200;
+    WITH  MAX_USER_CONNECTIONS 5  MAX_QUERIES_PER_HOUR  7200  max_queries_per_hour  89010;
 ```
+Note resource options like `MAX_QUERIES_PER_HOUR` or `max_queries_per_hour` should not be wrapped with characters \`\`
 
 ##### Rename existing user
 ```
