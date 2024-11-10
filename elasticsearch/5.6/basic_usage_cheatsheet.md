@@ -97,9 +97,21 @@ Note
 - set up HTTP header `Accept` for determining reponse body format.
 
 #### [Create a new index](https://www.elastic.co/guide/en/elasticsearch/reference/5.6/indices-create-index.html)
-```
+```bash
 curl  --request PUT --header "Content-Type: application/json;" --header "Accept: application/json;" \
-   --data @/path/to/body.json  -v "http://HOSTNAME:PORT/NEW_INDEX_NAME?pretty"
+   --data @/path/to/body.json  -v "http://HOSTNAME:PORT/NEW_INDEX_NAME?pretty" ;
+```
+
+possible request body
+```json
+{
+    "settings" : {
+        "index" : {
+            "number_of_shards" : 4,
+            "number_of_replicas" : 1
+        }
+    }
+}
 ```
 Note
 - index name (`NEW_INDEX_NAME`) has to be **all lower-case characters**, underscore character is allowed.
