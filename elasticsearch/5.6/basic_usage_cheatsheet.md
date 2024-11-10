@@ -87,16 +87,24 @@ Note:
 Without URL query parameter `acknowledge=true`, the key file won't be used and **basic license** won't be applied, instead you will get message to list all functions that will be disabled after applying the basic license, after reading through all effects , you can add the query parameter `acknowledge=true` back to the API URL, this time it will truly apply the key file and update to **basic license** for you.
 
 ### Index
-* List all existing indices
+#### List all existing indices, using [`_cat/indices`](https://www.elastic.co/guide/en/elasticsearch/reference/5.6/cat-indices.html)
 ```
-curl  -H "Accept: application/json;"   --request GET  "http://HOSTNAME/_cat/indices?v&pretty"
+curl  -H "Accept: application/json;"   --request GET \
+    "http://HOSTNAME/_cat/indices?v&pretty&format=text&h=status,index,pri,docs.count,docs.deleted"
 ```
+Note
+- the query parameter `h` allows user to selectly present certain headers / columns in the response body.
+- set up HTTP header `Accept` for determining reponse body format.
 
-* Create a new index
+#### [Create a new index](https://www.elastic.co/guide/en/elasticsearch/reference/5.6/indices-create-index.html)
 ```
-curl  -H "Accept: application/json;"  --request PUT "http://HOSTNAME:PORT/NEW_INDEX_NAME?pretty"
+curl  --request PUT --header "Content-Type: application/json;" --header "Accept: application/json;" \
+   --data @/path/to/body.json  -v "http://HOSTNAME:PORT/NEW_INDEX_NAME?pretty"
 ```
-Remember index name (`NEW_INDEX_NAME`) has to be **all lower-case characters**, underscore character is allowed.
+Note
+- index name (`NEW_INDEX_NAME`) has to be **all lower-case characters**, underscore character is allowed.
+- for any character like `{`, `[`, `@` which will cause error, please convert it to [URL-encoded string](https://www.urlencoder.org/) before the API call
+
 Response would be like :
 ```
 // acknowledged is true, which means new index is successfully created.
@@ -107,7 +115,7 @@ Response would be like :
 }
 ```
 
-* Delete an existing index
+#### Delete an existing index
 ```
 curl  -H "Accept: application/json;"  --request DELETE "http://HOSTNAME:PORT/USELESS_INDEX_NAME?pretty"
 ```
