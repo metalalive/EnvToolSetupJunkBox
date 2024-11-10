@@ -2,7 +2,7 @@
 
 perform all operations through REST API, basic pattern is like :
 ```
-curl  -H "Content-Type: YOUR_CONTENT_TYPE;"  -H "Accept: YOUR_ACCEPT_TYPE;"   --request REQEUST_METHOD \
+curl  --header "Content-Type: YOUR_CONTENT_TYPE;"  --header "Accept: YOUR_ACCEPT_TYPE;"   --request REQEUST_METHOD \
   --data-binary '@request_body_file'  "http://HOSTNAME:PORT/API_PATH"
 ```
 
@@ -16,7 +16,7 @@ Note:
 
 #### [cat health ](https://www.elastic.co/guide/en/elasticsearch/reference/5.6/cat-health.html)
 ```
-curl -H "Accept: application/json;"   --request GET "http://HOSTNAME:PORT/_cat/health?pretty"
+curl --header "Accept: application/json;"   --request GET "http://HOSTNAME:PORT/_cat/health?pretty"
 ```
 which returns list of running clusters :
 ```json
@@ -45,7 +45,7 @@ Note
 
 #### [Nodes](https://www.elastic.co/guide/en/elasticsearch/reference/5.6/cat-nodes.html)
 ```
-curl  -H "Accept: application/json;"   --request GET "http://HOSTNAME:PORT/_cat/nodes?v&pretty"
+curl  --header "Accept: application/json;"   --request GET "http://HOSTNAME:PORT/_cat/nodes?v&pretty"
 ```
 which returns list of running nodes like this:
 ```json
@@ -70,7 +70,7 @@ By default, the license type is `trial` on new fresh installation, after `versio
 
 * check your license type, and expiry time :
 ```
-curl -s -H "Accept: application/json" --request GET "http://USERNAME:PASSWORD@HOSTNAME:PORT/_license?pretty"
+curl -s --header "Accept: application/json" --request GET "http://USERNAME:PASSWORD@HOSTNAME:PORT/_license?pretty"
 ```
 
 unfortunately, most functions of x-pack plugin are DISABLED under **basic license** privilege.
@@ -80,7 +80,7 @@ For older versions (`version < 6.3`), you can get a **basic license** for free b
 * On the form submission, the website will email you with subsequent steps you must follow, and dowdnload link to a key file
 * download the key file (e.g. `DOWNLOADED_KEY_FILE_PATH`), update your elasticsearch license by consuming the API :
 ```
-curl -s -H "Content-Type: application/x-ndjson" -H "Accept: application/json" --data-binary \
+curl -s --heaader "Content-Type: application/x-ndjson" --header "Accept: application/json" --data-binary \
     '@DOWNLOADED_KEY_FILE_PATH' --request PUT  "http://USERNAME:PASSWORD@HOSTNAME:PORT/_xpack/license?pretty"
 ```
 Note:
@@ -89,7 +89,7 @@ Without URL query parameter `acknowledge=true`, the key file won't be used and *
 ### Index
 #### List all existing indices, using [`_cat/indices`](https://www.elastic.co/guide/en/elasticsearch/reference/5.6/cat-indices.html)
 ```
-curl  -H "Accept: application/json;"   --request GET \
+curl  --header "Accept: application/json;"   --request GET \
     "http://HOSTNAME/_cat/indices?v&pretty&format=text&h=status,index,pri,docs.count,docs.deleted"
 ```
 Note
@@ -129,7 +129,7 @@ Response would be like :
 
 #### Delete an existing index
 ```
-curl  -H "Accept: application/json;"  --request DELETE "http://HOSTNAME:PORT/USELESS_INDEX_NAME?pretty"
+curl  --header "Accept: application/json;"  --request DELETE "http://HOSTNAME:PORT/USELESS_INDEX_NAME?pretty"
 ```
 Note:
 * `USELESS_INDEX_NAME` may contain wildcard character, e.g. `serverlog-2020-*`
@@ -150,14 +150,14 @@ If you want to specify non-default data type to any field of your document, you 
 #### Check your template(s)
 
 ```
-curl -s -H "Accept: application/json" --request GET "http://HOSTNAME:PORT/_template?pretty"
+curl -s --header "Accept: application/json" --request GET "http://HOSTNAME:PORT/_template?pretty"
 
-curl -s -H "Accept: application/json" --request GET "http://HOSTNAME:PORT/_template/YOUR_TEMPLATE_NAME?pretty"
+curl -s --header "Accept: application/json" --request GET "http://HOSTNAME:PORT/_template/YOUR_TEMPLATE_NAME?pretty"
 ```
 
 #### Create / Update a template
 ```
-curl -s -H "Content-Type: application/x-ndjson" -H "Accept: application/json" --data-binary '@index_mapping_template.json' \
+curl -s --header "Content-Type: application/x-ndjson" --header "Accept: application/json" --data-binary '@index_mapping_template.json' \
     --request PUT "http://HOSTNAME:PORT/_template/YOUR_TEMPLATE_NAME?pretty"
 ```
 
@@ -177,7 +177,7 @@ Documents in Elasticsearch is like rows/records of a table in SQL database world
 
 command
 ```shell
-curl  -H "Content-Type: application/x-ndjson"  -H "Accept: application/json"   --data-binary  '@REQ_BODY_FILE' \
+curl  --header "Content-Type: application/x-ndjson"  --heaader "Accept: application/json"   --data-binary  '@REQ_BODY_FILE' \
     --request POST "http://HOSTNAME:PORT/CHOSEN_INDEX/CHOSEN_TYPE/USER_DEFINED_ID?pretty" | less
 ```
 request body file (`REQ_BODY_FILE`) may be like:
@@ -243,7 +243,7 @@ There are few idfferences if you compare this response with the previous one :
 You can also select which fields to update (and unselected fields remain unchanged) in a document, by calling `/CHOSEN_INDEX/CHOSEN_TYPE/USER_DEFINED_ID/_update`  API endpoint
 
 ```
-curl  -H "Content-Type: application/json"  -H "Accept: application/json;"  --data-binary  '@REQ_BODY_FILE' \
+curl  --header "Content-Type: application/json"  --header "Accept: application/json;"  --data-binary  '@REQ_BODY_FILE' \
     --request POST "http://HOSTNAME:PORT/CHOSEN_INDEX/CHOSEN_TYPE/USER_DEFINED_ID/_update?pretty"
 ```
 
@@ -285,12 +285,14 @@ Note :
 By simply send `DELETE` request with the document ID you attempt to delete, see [reference](https://www.elastic.co/guide/en/elasticsearch/reference/5.6/_deleting_documents.html)
 
 ```
-curl  -H "Content-Type: application/json"  -H "Accept: application/json;"  --data-binary  '@REQ_BODY_FILE' \
+curl  --header "Content-Type: application/json"  --header "Accept: application/json;"  --data-binary  '@REQ_BODY_FILE' \
     --request DELETE "http://HOSTNAME:PORT/CHOSEN_INDEX/CHOSEN_TYPE/USER_DEFINED_ID?pretty"
 ```
 or you can selectively delete several documents by providing query :
 ```
-curl -s -H "Content-Type: application/x-ndjson" -H "Accept: application/json" --data-binary '@es_search_query.json'  --request POST "http://<HOSTNAME>:<PORT>/<CHOSEN_INDEX>/<CHOSEN_TYPE>/_delete_by_query?pretty"
+curl -s --header "Content-Type: application/x-ndjson" --header "Accept: application/json" \
+    --data-binary '@es_search_query.json'  --request POST \
+    -v "http://<HOSTNAME>:<PORT>/<CHOSEN_INDEX>/<CHOSEN_TYPE>/_delete_by_query?pretty"
 ```
 where `es_search_query.json` includes search conditions, for example, to delete all documents under an index, you have:
 ```json
@@ -301,10 +303,14 @@ where `es_search_query.json` includes search conditions, for example, to delete 
 }
 ```
 
+#### find a document by ID
+See [Get API](https://www.elastic.co/guide/en/elasticsearch/reference/5.6/docs-get.html)
+
+
 ### Batch processing
 
 ```
-curl -s -H "Content-Type: application/x-ndjson"  -H "Accept: application/json;"  --data-binary  '@REQ_BODY_FILE' \
+curl -s --header "Content-Type: application/x-ndjson"  --header "Accept: application/json;"  --data-binary  '@REQ_BODY_FILE' \
     --request POST  "http://HOSTNAME:PORT/_bulk?pretty"
 ```
 According to [the general structure of the endpoint `_bulk`](https://www.elastic.co/guide/en/elasticsearch/reference/5.6/docs-bulk.html#docs-bulk) , the file that contains request body data (`REQ_BODY_FILE`) may look like:
@@ -339,7 +345,7 @@ You may need to add a few options ONLY if x-pack plugin is installed
 #### Authentication
 After x-pack installation, Authentication is **required** by default for most (all?) of API calls, be sure to add valid username & password in each API request, Otherwise you would receive `401` error response.
 ```
-curl  -H "Content-Type: application/json"  -H "Accept: application/json;"  --request <WHATEVER_METHOD> \
+curl  --header "Content-Type: application/json"  --header "Accept: application/json;"  --request <WHATEVER_METHOD> \
     "http://<USERNAME>:<PASSWORD>@<HOSTNAME>:<PORT>/<WHATEVER_API_ENDPOINT>" 
 ```
 
@@ -350,7 +356,7 @@ X-pack plugin is required for following API endpoints, also make sure user has t
 
 ##### Create User
 ```
-curl -s -H "Content-Type: application/x-ndjson" -H "Accept: application/json" --data-binary '@es_xpack_edit_user.json' \
+curl -s --header "Content-Type: application/x-ndjson" --header "Accept: application/json" --data-binary '@es_xpack_edit_user.json' \
     --request POST  "http://<USERNAME>:<PASSWORD>@<HOSTNAME>:<PORT>/_xpack/security/user/<NEW_USER_NAME>?pretty"
 ```
 where `es_xpack_edit_user.json` may be like:
@@ -376,7 +382,7 @@ API endpoint is the same as above `/_xpack/security/user/<EXISTING_USER_NAME>`, 
 ##### View status of user(s)
 * For any authenticated user viewing him/herself:
 ```
-curl -s -H "Accept: application/json" --request GET \
+curl -s --header "Accept: application/json" --request GET \
     "http://<USERNAME>:<PASSWORD>@<HOSTNAME>:<PORT>/_xpack/security/_authenticate?pretty"
 ```
 expected response may look like:
@@ -394,14 +400,14 @@ Note the enabled field can be false, which means the user account is deactivated
 
 * For users who have permission to view all other users :
 ```
-curl -s -H "Accept: application/json" --request GET \
+curl -s --header "Accept: application/json" --request GET \
     "http://<USERNAME>:<PASSWORD>@<HOSTNAME>:<PORT>/_xpack/security/user/?pretty"
 ```
 Then elasticsearch responds with list of exising users, the structure of each item is as shown above.
 
 ##### Change password
 ```
-curl  -H "Content-Type: application/json"  -H "Accept: application/json;" -d '{"password": "<YOUR_NEW_PASSWD>"}' \
+curl  --header "Content-Type: application/json"  --header "Accept: application/json;" -d '{"password": "<YOUR_NEW_PASSWD>"}' \
    --request PUT  "http://<USERNAME>:<PASSWORD>@<HOSTNAME>:<PORT>/_xpack/security/user/<USERNAME>/_password?pretty" 
 ```
 Note:
@@ -412,7 +418,7 @@ Note:
 
 ##### Create a role
 ```
-curl -s -H "Content-Type: application/x-ndjson" -H "Accept: application/json" --data-binary '@es_xpack_edit_role.json' \
+curl -s --header "Content-Type: application/x-ndjson" --header "Accept: application/json" --data-binary '@es_xpack_edit_role.json' \
     --request POST  "http://<USERNAME>:<PASSWORD>@<HOSTNAME>:<PORT>/_xpack/security/role/<NEW_ROLE_NAME>?pretty"
 ```
 where `es_xpack_edit_role.json` may look like :
@@ -443,7 +449,7 @@ API endpoint is the same as above `/_xpack/security/role/<EXISTING_ROLE_NAME>`, 
 ##### View status of role(s)
 For users who have permission to view all existing roles :
 ```
-curl -s -H "Accept: application/json" --request GET \
+curl -s --header "Accept: application/json" --request GET \
     "http://<USERNAME>:<PASSWORD>@<HOSTNAME>:<PORT>/_xpack/security/role/?pretty"
 ```
 
