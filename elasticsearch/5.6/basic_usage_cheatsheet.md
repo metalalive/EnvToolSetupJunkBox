@@ -184,6 +184,14 @@ request body file (`REQ_BODY_FILE`) may be like:
 ```json
 {"name": "Rei", "unit": ["millisecond", "gallon"]}
 ```
+Note
+- header should include `Content-Type` with value `application/x-ndjson` (not `application/json`), since I use  the option `--data-binary` in the command, which means data source of request body is from binary file, not from command-line string.
+- there must be `@` character before `REQ_BODY_FILE` in the command
+- `CHOSEN_INDEX` could be any existing index , the same rule is also applied to `CHOSEN_TYPE`
+- `USER_DEFINED_ID` is any string that hasn't been used as ID for any other document **under the same index and the same type**.
+- You have to choose an index when creating a new document
+- request method `--request` can be either `POST` or `PUT`, ElasticSearch internally recognizes whether this reqeust will create or update a document (bug ?)
+
 response:
 ```
 {
@@ -201,11 +209,8 @@ response:
 }
 ```
 Note
-* header should include `Content-Type` with value `application/x-ndjson` (not `application/json`), since I use  the option `--data-binary` in the command, which means data source of request body is from binary file, not from command-line string.
-* there must be `@` character before `REQ_BODY_FILE` in the command
-* `CHOSEN_INDEX` could be any existing index , the same rule is also applied to `CHOSEN_TYPE`
-* `USER_DEFINED_ID` is any string that hasn't been used as ID for any other document **under the same index and the same type**.
-* You have to choose an index when creating a new document
+- field `result` can be `created` or `updated`
+- field `version` indicates number of times this document of the same ID has been modified
 
 
 
