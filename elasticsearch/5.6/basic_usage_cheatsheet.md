@@ -224,11 +224,13 @@ The command / API endpoint is the same as creating index, except the extra field
 }}}
 ```
 
-### Note for mapping configuation
+### Important Note for mapping configuation
+- Before version 7.x, ElasticSearch allows one index could have multiple mapping types , however the development team changed the internal design and [no longer support multiple mapping types](https://www.elastic.co/guide/en/elasticsearch/reference/5.6/removal-of-types.html) since v8.x , please DO NOT create multiple mapping types on one single index.
 - Default data types somehow may bring up issues like [Array of objects (nested fields) is flattened](https://www.elastic.co/guide/en/elasticsearch/reference/5.6/nested.html#nested-arrays-flattening-objects).
+  - current solution is to map such array-of-objects field to [`nested` data type](https://www.elastic.co/guide/en/elasticsearch/reference/5.6/nested.html), see  [this template example](./index_mapping_template.json) for detail.
 - Once data type of a field is determined for an index (for a set of indices), [there is no easy way to edit that after your first indexed document is stored](https://discuss.elastic.co/t/how-to-update-a-field-type-of-existing-index-in-elasticsearch/53892).
   - update the mapping on an existing field will cause error
-  - the workaround is to create another index, set up the mapping first, then copy the documents from the old index to the new one , this is called [reindex](https://www.elastic.co/guide/en/elasticsearch/reference/5.6/docs-reindex.html) in elasticsearch doc.
+  - the only thing to do is to create another index with new mapping configuration, move the documents from old index to this new index
 - one field could have multiple data types for different application use cases (TODO) , see [multi-fields](https://www.elastic.co/guide/en/elasticsearch/reference/5.6/multi-fields.html)  in elasticsearch doc.
 
 ## Template
@@ -393,6 +395,11 @@ where `es_search_query.json` includes search conditions, for example, to delete 
 
 ### find a document by ID
 See [Get API](https://www.elastic.co/guide/en/elasticsearch/reference/5.6/docs-get.html)
+
+### move documents between indices
+To move documents between indices , you can create another index, set up the mapping first, then copy the documents from the old index to the new one , this is called [reindex](https://www.elastic.co/guide/en/elasticsearch/reference/5.6/docs-reindex.html) in elasticsearch doc.
+
+- in old version of ElasticSearch, reindex will copy old unecessary mapping types to the new index (TODO / FIXME)
 
 ## Batch processing
 ```
