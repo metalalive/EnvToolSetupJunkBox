@@ -226,17 +226,17 @@ The command / API endpoint is the same as creating index, you can add `mappings`
 }}}
 ```
 
-
 #### Note for mapping configuation
-- TODO
+- Default data types somehow may bring up issues like [Array of objects (nested fields) is flattened](https://www.elastic.co/guide/en/elasticsearch/reference/5.6/nested.html#nested-arrays-flattening-objects).
+- Once data type of a field is determined for an index (for a set of indices), [there is no easy way to edit that after your first indexed document is stored](https://discuss.elastic.co/t/how-to-update-a-field-type-of-existing-index-in-elasticsearch/53892).
+  - update the mapping on an existing field will cause error
+  - the workaround is to create another index, set up the mapping first, then copy the documents from the old index to the new one , this is called [reindex](https://www.elastic.co/guide/en/elasticsearch/reference/5.6/docs-reindex.html) in elasticsearch doc.
 
-#### Avoid mapping explosion
-Default data types somehow may bring up issues like [Array of objects (nested fields) is flattened](https://www.elastic.co/guide/en/elasticsearch/reference/5.6/nested.html#nested-arrays-flattening-objects) , once data type of a field is determined for an index (for a set of indices), [there is no easy way to edit that after your first indexed document is stored](https://discuss.elastic.co/t/how-to-update-a-field-type-of-existing-index-in-elasticsearch/53892).
-* 
 
-If you want to specify non-default data type to any field of your document, you can customize [mapping](https://www.elastic.co/guide/en/elasticsearch/reference/current/mapping.html#mapping) definition before creating your first document with a new index. See [this article](https://www.elastic.co/blog/logstash_lesson_elasticsearch_mapping) to create custom template for index mapping.
+### Template
+Another way to map non-default data type to any field of your document, is to apply template. See [this article](https://www.elastic.co/blog/logstash_lesson_elasticsearch_mapping) to create custom template for index mapping.
 
-#### Check your template(s)
+##### Check your template(s)
 
 ```
 curl -s --header "Accept: application/json" --request GET "http://HOSTNAME:PORT/_template?pretty"
@@ -244,7 +244,7 @@ curl -s --header "Accept: application/json" --request GET "http://HOSTNAME:PORT/
 curl -s --header "Accept: application/json" --request GET "http://HOSTNAME:PORT/_template/YOUR_TEMPLATE_NAME?pretty"
 ```
 
-#### Create / Update a template
+##### Create / Update a template
 ```
 curl -s --header "Content-Type: application/x-ndjson" --header "Accept: application/json" --data-binary '@index_mapping_template.json' \
     --request PUT "http://HOSTNAME:PORT/_template/YOUR_TEMPLATE_NAME?pretty"
