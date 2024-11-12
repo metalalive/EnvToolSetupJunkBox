@@ -1,5 +1,5 @@
-### Accesses through REST API
-
+# ElasticSearch basic usage cheatsheet
+## Accesses through REST API
 perform all operations through REST API, basic pattern is like :
 ```
 curl  --header "Content-Type: YOUR_CONTENT_TYPE;"  --header "Accept: YOUR_ACCEPT_TYPE;"   --request REQEUST_METHOD \
@@ -11,10 +11,8 @@ Note:
 * `--data-binary '@request_body_file' ` is optional , depending on design of each API endpoint.
 * `API_PATH` varies between each API endpoint
 
-
-### Status check
-
-#### [cat health ](https://www.elastic.co/guide/en/elasticsearch/reference/5.6/cat-health.html)
+## Status check
+### [cat health](https://www.elastic.co/guide/en/elasticsearch/reference/5.6/cat-health.html)
 ```
 curl --header "Accept: application/json;"   --request GET "http://HOSTNAME:PORT/_cat/health?pretty"
 ```
@@ -43,7 +41,7 @@ Note
 * `status` could be `green`, `yellow`, `red`,  read [this](https://www.elastic.co/guide/en/elasticsearch/reference/current/cluster-health.html#cluster-health-api-response-body) for detail.
 
 
-#### [Nodes](https://www.elastic.co/guide/en/elasticsearch/reference/5.6/cat-nodes.html)
+### [Nodes](https://www.elastic.co/guide/en/elasticsearch/reference/5.6/cat-nodes.html)
 ```
 curl  --header "Accept: application/json;"   --request GET "http://HOSTNAME:PORT/_cat/nodes?v&pretty"
 ```
@@ -65,7 +63,7 @@ which returns list of running nodes like this:
 ]
 ```
 
-#### [License](https://www.elastic.co/guide/en/elasticsearch/reference/current/license-settings.html)
+### [License](https://www.elastic.co/guide/en/elasticsearch/reference/current/license-settings.html)
 By default, the license type is `trial` on new fresh installation, after `version >= 6.3` , elasticsearch has provided open source version of elasticsearch to install (OSS in short) since version `6.3`. The [license type](https://www.elastic.co/subscriptions) affects the functionalities that are allowed to use in elasticsearch e.g. Xpack, machine-learning.
 
 * check your license type, and expiry time :
@@ -86,8 +84,8 @@ curl -s --heaader "Content-Type: application/x-ndjson" --header "Accept: applica
 Note:
 Without URL query parameter `acknowledge=true`, the key file won't be used and **basic license** won't be applied, instead you will get message to list all functions that will be disabled after applying the basic license, after reading through all effects , you can add the query parameter `acknowledge=true` back to the API URL, this time it will truly apply the key file and update to **basic license** for you.
 
-### Index
-#### List all existing indices, using [`_cat/indices`](https://www.elastic.co/guide/en/elasticsearch/reference/5.6/cat-indices.html)
+## Index
+### List all existing indices, using [`_cat/indices`](https://www.elastic.co/guide/en/elasticsearch/reference/5.6/cat-indices.html)
 ```
 curl  --header "Accept: application/json;"   --request GET \
     "http://HOSTNAME/_cat/indices?v&pretty&format=text&h=status,index,pri,docs.count,docs.deleted"
@@ -96,7 +94,7 @@ Note
 - the query parameter `h` allows user to selectly present certain headers / columns in the response body.
 - set up HTTP header `Accept` for determining reponse body format.
 
-#### [Create a new index](https://www.elastic.co/guide/en/elasticsearch/reference/5.6/indices-create-index.html)
+### [Create a new index](https://www.elastic.co/guide/en/elasticsearch/reference/5.6/indices-create-index.html)
 ```bash
 curl  --request PUT --header "Content-Type: application/json;" --header "Accept: application/json;" \
    --data @/path/to/body.json  -v "http://HOSTNAME:PORT/NEW_INDEX_NAME?pretty" ;
@@ -127,7 +125,7 @@ Response would be like :
 }
 ```
 
-#### Delete an existing index
+### Delete an existing index
 ```
 curl  --header "Accept: application/json;"  --request DELETE "http://HOSTNAME:PORT/USELESS_INDEX_NAME?pretty"
 ```
@@ -140,13 +138,13 @@ Response would be like :
   "acknowledged" : true
 }
 ```
-### Mapping
-#### Read the mappings of a given index
+## Mapping
+### Read the mappings of a given index
 ```bash
 curl  --request  GET   -v  "http://HOSTNAME:PORT/WHATEVER_INDEX_NAME/_mapping?pretty"
 ```
 
-#### Determine [field datatypes](https://www.elastic.co/guide/en/elasticsearch/reference/5.6/mapping-types.html)
+### Determine [field datatypes](https://www.elastic.co/guide/en/elasticsearch/reference/5.6/mapping-types.html)
 An **empty index** does not have any mapping and there is no document in it. if you read the mapping, the response may look like following :
 ```json
 {
@@ -175,13 +173,14 @@ By default, Elasticsearch **guesses** data type on each field  on inserting the 
 }}}}}
 ```
 
-To explicitly determine the mapping data type on each field, you can [modify the mapping](https://www.elastic.co/guide/en/elasticsearch/reference/5.6/indices-put-mapping.html).
+To explicitly determine the mapping data type on each field, you can [modify the mapping](https://www.elastic.co/guide/en/elasticsearch/reference/5.6/indices-put-mapping.html) with the following options.
 
-##### add the data type on non-existent fields into an existing index
+#### add the data type on non-existent fields into an existing index
 Here is the example command :
 
 ```bash
-curl   --request  PUT   --data @/PATH/TO/test-req-body.json  -v  "http://HOSTNAME:PORT/WHATEVER_INDEX_NAME/_mapping/WHATEVER_TYPE_NAME?pretty"
+curl   --request  PUT   --data @/PATH/TO/test-req-body.json  \
+    -v  "http://HOSTNAME:PORT/WHATEVER_INDEX_NAME/_mapping/WHATEVER_TYPE_NAME?pretty"
 ```
 possible request body
 ```json
@@ -192,7 +191,7 @@ possible request body
   }
 }
 ```
-Then [read the mapping](#read-the-mappings-of-a-given-index) again, the response should look like following (omit few unimportant `fields` for simplicity)
+Then [read the mapping](#read-the-mappings-of-a-given-index) again, the response should look like :
 ```json
 {
   "WHATEVER_INDEX_NAME" : {
@@ -206,9 +205,8 @@ Then [read the mapping](#read-the-mappings-of-a-given-index) again, the response
 ```
 You can also map more non-existent fields to specific data types using the same command.
 
-
-##### specify initial mapping on [creating a new index](#create-a-new-index)
-The command / API endpoint is the same as creating index, you can add `mappings` field to the request body:
+#### specify initial mapping on [creating a new index](#create-a-new-index)
+The command / API endpoint is the same as creating index, except the extra field `mappings` can be added to the request body:
 ```json
 {
     "settings" : {
@@ -226,25 +224,24 @@ The command / API endpoint is the same as creating index, you can add `mappings`
 }}}
 ```
 
-#### Note for mapping configuation
+### Note for mapping configuation
 - Default data types somehow may bring up issues like [Array of objects (nested fields) is flattened](https://www.elastic.co/guide/en/elasticsearch/reference/5.6/nested.html#nested-arrays-flattening-objects).
 - Once data type of a field is determined for an index (for a set of indices), [there is no easy way to edit that after your first indexed document is stored](https://discuss.elastic.co/t/how-to-update-a-field-type-of-existing-index-in-elasticsearch/53892).
   - update the mapping on an existing field will cause error
   - the workaround is to create another index, set up the mapping first, then copy the documents from the old index to the new one , this is called [reindex](https://www.elastic.co/guide/en/elasticsearch/reference/5.6/docs-reindex.html) in elasticsearch doc.
+- one field could have multiple data types for different application use cases (TODO) , see [multi-fields](https://www.elastic.co/guide/en/elasticsearch/reference/5.6/multi-fields.html)  in elasticsearch doc.
 
-
-### Template
+## Template
 Another way to map non-default data type to any field of your document, is to apply template. See [this article](https://www.elastic.co/blog/logstash_lesson_elasticsearch_mapping) to create custom template for index mapping.
 
-##### Check your template(s)
-
+### Check your template(s)
 ```
 curl -s --header "Accept: application/json" --request GET "http://HOSTNAME:PORT/_template?pretty"
 
 curl -s --header "Accept: application/json" --request GET "http://HOSTNAME:PORT/_template/YOUR_TEMPLATE_NAME?pretty"
 ```
 
-##### Create / Update a template
+### Create / Update a template
 ```
 curl -s --header "Content-Type: application/x-ndjson" --header "Accept: application/json" --data-binary '@index_mapping_template.json' \
     --request PUT "http://HOSTNAME:PORT/_template/YOUR_TEMPLATE_NAME?pretty"
@@ -258,12 +255,10 @@ The tmeplate example [index_mapping_template.json](./index_mapping_template.json
 ```
 
 
-### Document
-
+## Document
 Documents in Elasticsearch is like rows/records of a table in SQL database world
 
-#### Add a new document
-
+### Add a new document
 command
 ```shell
 curl  --header "Content-Type: application/x-ndjson"  --heaader "Accept: application/json"   --data-binary  '@REQ_BODY_FILE' \
@@ -303,8 +298,8 @@ Note
 
 
 
-#### Update an existing document
-##### Update and erase all previous stored fields
+### Update an existing document
+#### Update and erase all previous stored fields
 
 If you run the same command as shown in [Add a new document](#add-a-new-document) again, with the same index / type / ID but different request body data, elasticsearch will internally treat it as an update operation and **discard all the fields stored in the document in your previous API call**.
 
@@ -374,8 +369,7 @@ Note :
   * `ctx` has several attributes to access: `_source`, `_index`, `_type`, `_id`, `_version`, `_routing`, `_parent` ... etc
 
 
-#### Delete an existing document
-
+### Delete an existing document
 By simply send `DELETE` request with the document ID you attempt to delete, see [reference](https://www.elastic.co/guide/en/elasticsearch/reference/5.6/_deleting_documents.html)
 
 ```
@@ -397,12 +391,10 @@ where `es_search_query.json` includes search conditions, for example, to delete 
 }
 ```
 
-#### find a document by ID
+### find a document by ID
 See [Get API](https://www.elastic.co/guide/en/elasticsearch/reference/5.6/docs-get.html)
 
-
-### Batch processing
-
+## Batch processing
 ```
 curl -s --header "Content-Type: application/x-ndjson"  --header "Accept: application/json;"  --data-binary  '@REQ_BODY_FILE' \
     --request POST  "http://HOSTNAME:PORT/_bulk?pretty"
@@ -430,152 +422,11 @@ Note:
 * If you need to add, update, and delete fields of a document in one shot , you have to separate `doc` field (for adding and updating fields) and `script` field (for deleting fields) into 2 payloads, DO NOT put them into one payload otherwise [you will get validation failure](https://stackoverflow.com/a/65147914/9853105)
 * official documentation describes that the request body should end with newline character (ASCII: `0xA`) for bulk API, [But in some versions, the bulk API call seems to work even you don't do so](https://stackoverflow.com/questions/36766471/validation-failed-1-no-requests-added-in-bulk-indexing-elasticsearch#comment115145269_36769643) .... Keep that in mind.
 
-
-
-
-### X-pack
-You may need to add a few options ONLY if x-pack plugin is installed
-
-#### Authentication
-After x-pack installation, Authentication is **required** by default for most (all?) of API calls, be sure to add valid username & password in each API request, Otherwise you would receive `401` error response.
-```
-curl  --header "Content-Type: application/json"  --header "Accept: application/json;"  --request <WHATEVER_METHOD> \
-    "http://<USERNAME>:<PASSWORD>@<HOSTNAME>:<PORT>/<WHATEVER_API_ENDPOINT>" 
-```
-
-
-#### Account Management
-
-X-pack plugin is required for following API endpoints, also make sure user has the privilege to perform these operations
-
-##### Create User
-```
-curl -s --header "Content-Type: application/x-ndjson" --header "Accept: application/json" --data-binary '@es_xpack_edit_user.json' \
-    --request POST  "http://<USERNAME>:<PASSWORD>@<HOSTNAME>:<PORT>/_xpack/security/user/<NEW_USER_NAME>?pretty"
-```
-where `es_xpack_edit_user.json` may be like:
-```json
-{
-    "password": "<INITIAL_PASSWORD>",
-    "roles" : ["<ASSIGNED_ROLE_1>",  "<ASSIGNED_ROLE_2>", "<ASSIGNED_ROLE_3>" ],
-    "full_name" : "<WHATEVER_NAME>",
-    "email" : null,
-    "enabled": true
-}
-```
-Note:
-* `<ASSIGNED_ROLE_x>` is valid name of an existing role in your elasticsearch, see [how to view/edit a role](#role-management) for detail.
-
-##### Edit User
-
-API endpoint is the same as above `/_xpack/security/user/<EXISTING_USER_NAME>`, but request method is `PUT`, also note that :
-* `password` field can be omitted in the request body
-* It is NOT partial update, the fields specified in the update API call will overwrite whole content of the fields stored in elasticsearch accordingly. For example, if you attempt to only append new roles to the list of `roles` field , you will need to fetch those roles already assigned to the user.
-* Built-in users in elasticsearch can NOT be updated by anyone, otherwise you will get error response (validation failure, HTTP status 400)
-
-##### View status of user(s)
-* For any authenticated user viewing him/herself:
-```
-curl -s --header "Accept: application/json" --request GET \
-    "http://<USERNAME>:<PASSWORD>@<HOSTNAME>:<PORT>/_xpack/security/_authenticate?pretty"
-```
-expected response may look like:
-```json
-{
-  "username" : "<USERNAME>",
-  "roles" : ["<ASSIGNED_ROLE_1>",  "<ASSIGNED_ROLE_2>", "<ASSIGNED_ROLE_3>" ],
-  "full_name" : "<WHATEVER_NAME>",
-  "email" : null,
-  "metadata" : { },
-  "enabled" : true
-}
-```
-Note the enabled field can be false, which means the user account is deactivated.
-
-* For users who have permission to view all other users :
-```
-curl -s --header "Accept: application/json" --request GET \
-    "http://<USERNAME>:<PASSWORD>@<HOSTNAME>:<PORT>/_xpack/security/user/?pretty"
-```
-Then elasticsearch responds with list of exising users, the structure of each item is as shown above.
-
-##### Change password
-```
-curl  --header "Content-Type: application/json"  --header "Accept: application/json;" -d '{"password": "<YOUR_NEW_PASSWD>"}' \
-   --request PUT  "http://<USERNAME>:<PASSWORD>@<HOSTNAME>:<PORT>/_xpack/security/user/<USERNAME>/_password?pretty" 
-```
-Note:
-* Each user account can only change his/her own password, unless `USERNAME` has superuser role.
-
-
-#### Role Management
-
-##### Create a role
-```
-curl -s --header "Content-Type: application/x-ndjson" --header "Accept: application/json" --data-binary '@es_xpack_edit_role.json' \
-    --request POST  "http://<USERNAME>:<PASSWORD>@<HOSTNAME>:<PORT>/_xpack/security/role/<NEW_ROLE_NAME>?pretty"
-```
-where `es_xpack_edit_role.json` may look like :
-```
-{
-    "cluster":["<VALID_CLUSTER_PRIV_1>", "<VALID_CLUSTER_PRIV_2>"],
-    "indices":[
-        {
-            "names": ["<INDEX_PATTERN_1>", "<INDEX_PATTERN_2>"],
-            "privileges": ["<VALID_INDICES_PRIV_1>", "<VALID_INDICES_PRIV_2>"]
-        }
-    ],
-    "run_as": []
-}
-```
-Note:
-* `<VALID_CLUSTER_PRIV_x>` is valid name of any low-level [cluster privilege](https://www.elastic.co/guide/en/elasticsearch/reference/6.3/security-privileges.html#privileges-list-cluster) defined in elasticsearch, these privileges will take effect in the entire cluster.
-* `<VALID_INDICES_PRIV_x>` is valid name of any low-level [indices privilege](https://www.elastic.co/guide/en/elasticsearch/reference/6.3/security-privileges.html#privileges-list-indices) defined in elasticsearch, these privileges will affect access permissions to the index patterns in the list : `<INDEX_PATTERN_1>`, `<INDEX_PATTERN_2>` .....
-* The list of the valid privileges (as mentioned above) may change between different elasticsearch versions, unfortunately, the privileges are probably NOT documented for old versions (before v6.3), You might need trial and error ....
-* `<INDEX_PATTERN_x>` may contain wildcard character `*` to cover variation of index string patterns, e.g. `log-*-appserver` 
-
-##### Update a role
-API endpoint is the same as above `/_xpack/security/role/<EXISTING_ROLE_NAME>`, but request method is `PUT`, also note that :
-* `password` field can be omitted in the request body
-* It is NOT partial update, the fields specified in the update API call will overwrite whole content of the fields stored in elasticsearch accordingly.
-* Built-in roles in elasticsearch can NOT be updated by anyone, otherwise you will get error response (validation failure, HTTP status 400)
-
-##### View status of role(s)
-For users who have permission to view all existing roles :
-```
-curl -s --header "Accept: application/json" --request GET \
-    "http://<USERNAME>:<PASSWORD>@<HOSTNAME>:<PORT>/_xpack/security/role/?pretty"
-```
-
-
-### Query, DSL
-too complex ... might require another markdown file to describe
-
-### Troubleshooting
-#### out-of-memory error (JVM)
-##### Symptom
+## Troubleshooting
+### out-of-memory error (JVM)
+#### Symptom
 health flag turns RED, a running node goes down.
-##### Possible rootcuase
+#### Possible rootcuase
 certain number of documents indexed in elasticsearch, each of which has different key set, that cuase heap usage of index mapping grows.
 ##### Solution
 For key-value pair in a document, [avoid key generation depending on different use cases](https://www.elastic.co/blog/found-crash-elasticsearch#mapping-explosion), make document structure consistent.
-
-
-
-### Deep dive into internal architecture
-##### [Elasticsearch from the Bottom Up, Part 1](https://www.elastic.co/blog/found-elasticsearch-from-the-bottom-up)
-
-##### [keeping elasticsearch in sync with rational database](https://www.elastic.co/blog/found-keeping-elasticsearch-in-sync)
-
-Highlight of the articles :
-* When designing a replication strategy, the two most important concerns to consider are : **acceptable replication delay** and **data consistency**
-* Perfect synchronization between an application’s primary datastore (e.g. rational database) and Elasticsearch is rarely needed, and seldom possible.
-* Elasticsearch index is composed of multiple Lucene indexes, Each Lucene index is in turn composed of multiple **segments** inside of which documents reside.
-* Lucene segments are essentially immutable collections of documents
-* When an update is made to a document:
-  * the old document is marked as deleted in its existing segment
-  * the new document is buffered and used to create a new segment
-* which degrades performance , all analyzers must be re-run for documents whose values change, incurring potentially high CPU utilization
-* when the number of segments in the index has grown excessively, and/or the ratio of deleted documents in a segment is high, multiple segments are merged into a new single segment by copying documents out of old segments and into a new one, after which the old segments are deleted.
-* the most versatile way to bulk updates to documents in Elasticsearch is to use a queue with some sort of uniqueness constraint. The basic idea is to define an acceptable interval between document updates and to update the document no more frequently than that interval.
-* 
