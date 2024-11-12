@@ -141,8 +141,97 @@ Response would be like :
 }
 ```
 ### Mapping
+#### Read the mappings of a given index
+```bash
+curl  --request  GET   -v  "http://HOSTNAME:PORT/WHATEVER_INDEX_NAME/_mapping?pretty"
+```
 
-By default, Elasticsearch guesses data type on each field  when inserting a [document](#document) with a new index that hasn't been created. Default data types somehow may bring up issues like [Array of objects (nested fields) is flattened](https://www.elastic.co/guide/en/elasticsearch/reference/current/nested.html#nested-arrays-flattening-objects) , once data type of a field is determined for an index (for a set of indices), [there is no easy way to edit that after your first indexed document is stored](https://discuss.elastic.co/t/how-to-update-a-field-type-of-existing-index-in-elasticsearch/53892).
+#### Determine [field datatypes](https://www.elastic.co/guide/en/elasticsearch/reference/5.6/mapping-types.html)
+An **empty index** does not have any mapping and there is no document in it. if you read the mapping, the response may look like following :
+```json
+{
+  "WHATEVER_INDEX_NAME" : {
+    "mappings" : { }
+  }
+}
+```
+
+By default, Elasticsearch **guesses** data type on each field  on inserting the first [document](#document) to an **empty index**, almost all of the string fields will be mapped to `text` data types for full-text search (example below), this is not ideal for specific applications.
+```json
+{
+  "WHATEVER_INDEX_NAME" : {
+    "mappings" : {
+       "WHATEVER_TYPE_NAME" : {
+        "properties" : {
+          "WHATEVER_FIELD_NAME" : {
+            "type" : "text",
+            "fields" : {
+              "keyword" : {
+                "type" : "keyword",
+                "ignore_above" : 256
+              }
+            }
+          }
+}}}}}
+```
+
+To explicitly determine the mapping data type on each field, you can [modify the mapping](https://www.elastic.co/guide/en/elasticsearch/reference/5.6/indices-put-mapping.html).
+
+##### add the data type on non-existent fields into an existing index
+Here is the example command :
+
+```bash
+curl   --request  PUT   --data @/PATH/TO/test-req-body.json  -v  "http://HOSTNAME:PORT/WHATEVER_INDEX_NAME/_mapping/WHATEVER_TYPE_NAME?pretty"
+```
+possible request body
+```json
+{
+  "properties" : {
+    "nickname" : {"type" : "keyword"},
+    "num_violations" : {"type" : "short"}
+  }
+}
+```
+Then [read the mapping](#read-the-mappings-of-a-given-index) again, the response should look like following (omit few unimportant `fields` for simplicity)
+```json
+{
+  "WHATEVER_INDEX_NAME" : {
+    "mappings" : {
+      "WHATEVER_TYPE_NAME" : {
+        "properties" : {
+          "nickname" : {"type" : "keyword"},
+          "num_violations" : {"type" : "short"}
+        }
+}}}}
+```
+You can also map more non-existent fields to specific data types using the same command.
+
+
+##### specify initial mapping on [creating a new index](#create-a-new-index)
+The command / API endpoint is the same as creating index, you can add `mappings` field to the request body:
+```json
+{
+    "settings" : {
+        "index" : {
+            "number_of_shards" : 4,
+            "number_of_replicas" : 1
+        }
+    },
+    "mappings": {
+      "the-only-type": {
+        "properties" : {
+          "nickname" : {"type" : "keyword"},
+          "num_violations" : { "type" : "short"}
+        }
+}}}
+```
+
+
+#### Note for mapping configuation
+- TODO
+
+#### Avoid mapping explosion
+Default data types somehow may bring up issues like [Array of objects (nested fields) is flattened](https://www.elastic.co/guide/en/elasticsearch/reference/5.6/nested.html#nested-arrays-flattening-objects) , once data type of a field is determined for an index (for a set of indices), [there is no easy way to edit that after your first indexed document is stored](https://discuss.elastic.co/t/how-to-update-a-field-type-of-existing-index-in-elasticsearch/53892).
 * 
 
 If you want to specify non-default data type to any field of your document, you can customize [mapping](https://www.elastic.co/guide/en/elasticsearch/reference/current/mapping.html#mapping) definition before creating your first document with a new index. See [this article](https://www.elastic.co/blog/logstash_lesson_elasticsearch_mapping) to create custom template for index mapping.
